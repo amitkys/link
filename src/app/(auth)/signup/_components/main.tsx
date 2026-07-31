@@ -1,0 +1,58 @@
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, Controller } from "react-hook-form"
+import { z } from "zod";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button"
+import { SignupOtherInput } from "./others-input";
+
+// type of signup
+const signupSchema = z.object({
+  name: z.string().min(1, { error: "enter your name" }),
+  email: z.email({ message: "enter valid email" }).regex(/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/, { message: "enter valid email" }),
+  password: z.string().min(1, { error: "password should be at least 8 character long" })
+})
+
+// infer type from signupSchema
+export type SignupSchema = z.infer<typeof signupSchema>
+
+export function SignupForm() {
+  // initalization react hook form with type
+  const form = useForm<SignupSchema>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      email: "",
+      name: "",
+      password: ""
+    },
+  });
+
+  function onSubmit(data: SignupSchema) {
+    console.log(data)
+  }
+
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)}>
+      <Controller
+        control={form.control}
+        name="name"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+            <Input
+              {...field}
+              id={field.name}
+              type="text"
+              aria-invalid={fieldState.invalid}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+
+          </Field>
+        )}
+      />
+      <SignupOtherInput form={form} />
+      <Button type="submit">Create Account</Button>
+    </form>
+  )
+
+}
