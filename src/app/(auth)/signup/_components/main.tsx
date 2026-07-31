@@ -41,7 +41,7 @@ export function SignupForm() {
       name: SignupData.name,
     }, {
       onSuccess: () => {
-        toast.success("signup successful");
+        toast.success("signup successful", { position: "top-center" });
         router.push("/signin");
       },
       onError: (ctx) => {

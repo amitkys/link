@@ -37,8 +37,8 @@ export function SigninForm() {
       password: SigninData.password,
     }, {
       onSuccess: () => {
-        toast.success("signed in successfully");
-        router.push("/");
+        toast.success("signed in successfully", { position: "top-center" });
+        router.push("/dashboard");
       },
       onError: (ctx) => {
         form.setError("root", {
