@@ -4,15 +4,11 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { CustomeToast } from "./(auth)/signup/_components/toast-provider";
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ['latin'], weight: ["500", "600", "700", "800", "900"], variable: '--font-sans' });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+  variable: "--font-mono",
+  weight: ["500", "600", "700", "800", "900"],
   subsets: ["latin"],
 });
 
@@ -29,7 +25,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}
+      className={cn("h-full", "antialiased", geistMono.variable, "font-sans", inter.variable)}
     >
       <body className="min-h-full flex flex-col">
         <main>

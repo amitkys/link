@@ -4,45 +4,41 @@ import { useForm, Controller } from "react-hook-form"
 import { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button"
-import { SignupOtherInput } from "./others-input";
-import { signUp } from "@/lib/auth-client";
+import { PasswordInput } from "@/components/ui/password-input";
+import { LoadingSwap } from "@/components/ui/loading-swap";
+import { signIn } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { LoadingSwap } from "@/components/ui/loading-swap";
 
-// type of signup
-const signupSchema = z.object({
-  name: z.string().min(1, { error: "enter your name" }),
+// type of signin
+const signinSchema = z.object({
   email: z.email({ message: "enter valid email" }).regex(/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/, { message: "enter valid email" }),
-  password: z.string().min(8, { error: "password should be at least 8 character long" })
+  password: z.string().min(1, { error: "password is required" })
 })
 
-// infer type from signupSchema
-export type SignupSchema = z.infer<typeof signupSchema>
+// infer type from signinSchema
+export type SigninSchema = z.infer<typeof signinSchema>
 
-export function SignupForm() {
+export function SigninForm() {
   const router = useRouter();
 
   // initalization react hook form with type
-  const form = useForm<SignupSchema>({
-    resolver: zodResolver(signupSchema),
+  const form = useForm<SigninSchema>({
+    resolver: zodResolver(signinSchema),
     defaultValues: {
       email: "",
-      name: "",
       password: ""
     },
   });
 
-  async function onSubmit(SignupData: SignupSchema) {
-    // on submit, do the signup
-    const { data, error } = await signUp.email({
-      email: SignupData.email,
-      password: SignupData.password,
-      name: SignupData.name,
+  async function onSubmit(SigninData: SigninSchema) {
+    const { data, error } = await signIn.email({
+      email: SigninData.email,
+      password: SigninData.password,
     }, {
       onSuccess: () => {
-        toast.success("signup successful");
-        router.push("/signin");
+        toast.success("signed in successfully");
+        router.push("/");
       },
       onError: (ctx) => {
         form.setError("root", {
@@ -54,20 +50,20 @@ export function SignupForm() {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
-      {/* Name field */}
+      {/* Email field */}
       <Controller
         control={form.control}
-        name="name"
+        name="email"
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
             <FieldLabel htmlFor={field.name} className="text-sm font-semibold">
-              Name
+              Email
             </FieldLabel>
             <Input
               {...field}
               id={field.name}
-              type="text"
-              placeholder="Your full name"
+              type="email"
+              placeholder="you@example.com"
               aria-invalid={fieldState.invalid}
               className="h-10 rounded-lg text-sm"
             />
@@ -76,8 +72,26 @@ export function SignupForm() {
         )}
       />
 
-      {/* Email & password fields */}
-      <SignupOtherInput form={form} />
+      {/* Password field */}
+      <Controller
+        control={form.control}
+        name="password"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name} className="text-sm font-semibold">
+              Password
+            </FieldLabel>
+            <PasswordInput
+              {...field}
+              id={field.name}
+              placeholder="Enter your password"
+              aria-invalid={fieldState.invalid}
+              className="h-10 rounded-lg text-sm"
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
 
       {/* Root-level auth error */}
       {form.formState.errors.root && (
@@ -108,7 +122,7 @@ export function SignupForm() {
         className="mt-1 h-10 w-full cursor-pointer text-sm font-semibold tracking-wide"
       >
         <LoadingSwap isLoading={form.formState.isSubmitting}>
-          Create Account
+          Sign In
         </LoadingSwap>
       </Button>
     </form>
