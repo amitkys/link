@@ -22,21 +22,12 @@ import {
   getLinksForContext,
   getSubcategories,
 } from "../lib/action";
-import { LinkItem } from "../types";
+import { LinkItem, Platform } from "../types";
 import AddLinkModal from "./add-link-modal";
+import AddPlatformModal from "./add-platform-modal";
 import "./platform-explorer.css";
 
 // ── Types ──────────────────────────────────────────────────────
-
-/** Platform row from the DB */
-interface Platform {
-  id: string;
-  name: string;
-  icon: string | null;
-  userId: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 /** Category row from the DB */
 interface Category {
@@ -111,6 +102,9 @@ export default function PlatformExplorer({ platforms }: PlatformExplorerProps) {
 
   // Link creation modal state
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+
+  // Platform (Parent Folder) creation modal state
+  const [isPlatformModalOpen, setIsPlatformModalOpen] = useState(false);
 
   // ── Handlers ───────────────────────────────────────────────
 
@@ -271,6 +265,14 @@ export default function PlatformExplorer({ platforms }: PlatformExplorerProps) {
     setAnimationKey((k) => k + 1);
   };
 
+  /** Callback when a new platform (parent folder) is successfully created */
+  const handlePlatformCreated = (newPlatform: Platform) => {
+    if (currentView === "platforms") {
+      setItems((prev) => [...prev, newPlatform]);
+    }
+    setAnimationKey((k) => k + 1);
+  };
+
   // ── Derived state ──────────────────────────────────────────
 
   const isAtRoot = breadcrumb.length <= 1;
@@ -327,31 +329,42 @@ export default function PlatformExplorer({ platforms }: PlatformExplorerProps) {
           </nav>
         </div>
 
-        {!isAtRoot && (
-          <div className="explorer-actions">
+        <div className="explorer-actions">
+          {isAtRoot ? (
             <button
-              onClick={() => setIsLinkModalOpen(true)}
-              className="create-link-button"
-              disabled={isPending}
-            >
-              <IconLink size={16} />
-              <span>Add Link</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setFolderError(null);
-                setNewFolderName("");
-                setIsFolderModalOpen(true);
-              }}
-              className="create-folder-button"
+              onClick={() => setIsPlatformModalOpen(true)}
+              className="create-platform-button"
               disabled={isPending}
             >
               <IconFolderPlus size={16} />
-              <span>New Folder</span>
+              <span>New Parent Folder</span>
             </button>
-          </div>
-        )}
+          ) : (
+            <>
+              <button
+                onClick={() => setIsLinkModalOpen(true)}
+                className="create-link-button"
+                disabled={isPending}
+              >
+                <IconLink size={16} />
+                <span>Add Link</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setFolderError(null);
+                  setNewFolderName("");
+                  setIsFolderModalOpen(true);
+                }}
+                className="create-folder-button"
+                disabled={isPending}
+              >
+                <IconFolderPlus size={16} />
+                <span>New Folder</span>
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* ── Loading overlay ── */}
@@ -497,38 +510,48 @@ export default function PlatformExplorer({ platforms }: PlatformExplorerProps) {
           </div>
           <p className="empty-title">
             {currentView === "platforms"
-              ? "No platforms yet"
+              ? "No parent folders yet"
               : `No folders or links in "${currentLevel?.name}"`}
           </p>
           <p className="empty-subtitle">
             {currentView === "platforms"
-              ? "Add a platform from your dashboard to get started."
+              ? "Create a parent folder (platform) to start organizing your links!"
               : "This location is currently empty. Add a link or create a folder to get organized!"}
           </p>
 
-          {!isAtRoot && (
-            <div className="empty-actions-row">
+          <div className="empty-actions-row">
+            {isAtRoot ? (
               <button
-                onClick={() => setIsLinkModalOpen(true)}
+                onClick={() => setIsPlatformModalOpen(true)}
                 className="empty-create-btn empty-create-btn--primary"
               >
-                <IconLink size={16} />
-                <span>Save Link Here</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setFolderError(null);
-                  setNewFolderName("");
-                  setIsFolderModalOpen(true);
-                }}
-                className="empty-create-btn empty-create-btn--secondary"
-              >
                 <IconFolderPlus size={16} />
-                <span>Create Folder</span>
+                <span>Create Parent Folder</span>
               </button>
-            </div>
-          )}
+            ) : (
+              <>
+                <button
+                  onClick={() => setIsLinkModalOpen(true)}
+                  className="empty-create-btn empty-create-btn--primary"
+                >
+                  <IconLink size={16} />
+                  <span>Save Link Here</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setFolderError(null);
+                    setNewFolderName("");
+                    setIsFolderModalOpen(true);
+                  }}
+                  className="empty-create-btn empty-create-btn--secondary"
+                >
+                  <IconFolderPlus size={16} />
+                  <span>Create Folder</span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
 
@@ -627,6 +650,13 @@ export default function PlatformExplorer({ platforms }: PlatformExplorerProps) {
         platformId={targetPlatformId}
         categoryId={targetCategoryId}
         targetName={currentLevel?.name || "Platform"}
+      />
+
+      {/* ── Add Parent Folder (Platform) Modal ── */}
+      <AddPlatformModal
+        isOpen={isPlatformModalOpen}
+        onClose={() => setIsPlatformModalOpen(false)}
+        onSuccess={handlePlatformCreated}
       />
     </div>
   );

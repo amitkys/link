@@ -43,6 +43,37 @@ export const CreateLinkSchema = z.object({
 export type CreateLinkInput = z.infer<typeof CreateLinkSchema>;
 
 /**
+ * Zod runtime validation schema for creating a new platform / parent folder.
+ */
+export const CreatePlatformSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Folder name is required")
+    .max(50, "Folder name must be 50 characters or less"),
+  icon: z
+    .string()
+    .trim()
+    .url("Icon must be a valid URL")
+    .optional()
+    .or(z.literal("")),
+});
+
+export type CreatePlatformInput = z.infer<typeof CreatePlatformSchema>;
+
+/**
+ * Domain interface for a Platform (Parent Folder).
+ */
+export interface Platform {
+  id: string;
+  name: string;
+  icon: string | null;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
  * Domain interface for a saved Link item.
  */
 export interface LinkItem {
@@ -61,3 +92,4 @@ export interface LinkItem {
   updatedAt: Date;
   tags?: string[];
 }
+

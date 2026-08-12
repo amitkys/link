@@ -16,8 +16,63 @@ import {
   ActionResponse,
   CreateLinkInput,
   CreateLinkSchema,
+  CreatePlatformInput,
+  CreatePlatformSchema,
   LinkItem,
+  Platform,
 } from "../types";
+
+export async function createPlatform(
+  rawInput: CreatePlatformInput
+): Promise<ActionResponse<Platform>> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session) {
+      return { success: false, message: "User not authenticated" };
+    }
+
+    const userId = session.user.id;
+
+    const parsed = CreatePlatformSchema.safeParse(rawInput);
+    if (!parsed.success) {
+      const firstIssue = parsed.error.issues[0];
+      return {
+        success: false,
+        message: firstIssue ? firstIssue.message : "Invalid parent folder payload",
+      };
+    }
+
+    const { name, icon } = parsed.data;
+
+    const [newPlatform] = await db
+      .insert(platformTable)
+      .values({
+        userId,
+        name,
+        icon: icon || null,
+      })
+      .returning();
+
+    return {
+      success: true,
+      message: "Parent folder created successfully",
+      data: newPlatform,
+    };
+  } catch (error: unknown) {
+    console.log("🚀 ~ createPlatform ~ error:", error);
+    const dbErr = error as { code?: string; message?: string };
+    if (dbErr?.code === "23505" || dbErr?.message?.includes("unique")) {
+      return {
+        success: false,
+        message: "A parent folder with this name already exists",
+      };
+    }
+    return { success: false, message: "Failed to create parent folder" };
+  }
+}
 
 export async function getGlobalPlatform() {
   try {

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { getGlobalPlatform } from "./lib/action";
 import PlatformExplorer from "./_components/platform-explorer";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Explore Platforms & Links",
   description: "Discover and explore categorized social platforms, link collections, and creators on Link.",

@@ -42,7 +42,7 @@ export function SigninForm() {
     }, {
       onSuccess: () => {
         toast.success("signed in successfully", { position: "top-center" });
-        router.push("/dashboard");
+        router.push("/home");
       },
       onError: (ctx) => {
         form.setError("root", {
