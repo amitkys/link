@@ -1,7 +1,11 @@
-"use client";
-
+import type { Metadata } from "next";
 import { SignupForm } from "./_components/main";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Create Account",
+  description: "Join Link to organize, categorize, and share your social profiles and links.",
+};
 
 export default function Page() {
   return (

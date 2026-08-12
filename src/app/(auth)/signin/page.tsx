@@ -1,8 +1,12 @@
-"use client";
-
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { SigninForm } from "./_components/main";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Sign In",
+  description: "Sign in to your Link account to manage and organize your links.",
+};
 
 export default function Page() {
   return (
