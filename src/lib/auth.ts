@@ -11,5 +11,14 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+  trustedOrigins: [
+    "https://link.id0.uk",
+    "https://www.link.id0.uk",
+    "http://link.id0.uk",
+    "http://www.link.id0.uk",
+    ...(process.env.BETTER_AUTH_TRUSTED_ORIGINS
+      ? process.env.BETTER_AUTH_TRUSTED_ORIGINS.split(",")
+      : []),
+  ],
 });
