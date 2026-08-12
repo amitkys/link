@@ -34,6 +34,7 @@ export function PasswordInput({
   onChange,
   value,
   defaultValue,
+  className,
   ...props
 }: Omit<ComponentProps<typeof Input>, "type"> & {
   children?: ReactNode
@@ -52,9 +53,10 @@ export function PasswordInput({
   return (
     <PasswordInputContext value={{ password: currentValue.toString() }}>
       <div className="space-y-3">
-        <InputGroup>
+        <InputGroup className={className}>
           <InputGroupInput
             {...props}
+            className={className}
             value={value}
             defaultValue={defaultValue}
             type={showPassword ? "text" : "password"}

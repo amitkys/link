@@ -1,3 +1,5 @@
+"use client";
+
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, Controller } from "react-hook-form"
@@ -87,7 +89,6 @@ export function SigninForm() {
               {...field}
               id={field.name}
               autoComplete="current-password"
-              placeholder="Enter your password"
               aria-invalid={fieldState.invalid}
               className="h-10 rounded-lg text-sm"
             />
