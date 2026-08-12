@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { SigninForm } from "./_components/main";
 import Link from "next/link";
 
@@ -25,7 +26,9 @@ export default function Page() {
 
         {/* Card */}
         <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
-          <SigninForm />
+          <Suspense fallback={null}>
+            <SigninForm />
+          </Suspense>
         </div>
 
         {/* Footer legal */}

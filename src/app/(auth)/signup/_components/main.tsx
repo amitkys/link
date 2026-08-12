@@ -42,7 +42,7 @@ export function SignupForm() {
     }, {
       onSuccess: () => {
         toast.success("signup successful", { position: "top-center" });
-        router.push("/signin");
+        router.push(`/signin?email=${encodeURIComponent(SignupData.email)}`);
       },
       onError: (ctx) => {
         form.setError("root", {
@@ -67,7 +67,7 @@ export function SignupForm() {
               {...field}
               id={field.name}
               type="text"
-              placeholder="Your full name"
+              autoComplete="name"
               aria-invalid={fieldState.invalid}
               className="h-10 rounded-lg text-sm"
             />

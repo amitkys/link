@@ -1,4 +1,4 @@
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldLabel, FieldDescription } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Controller, UseFormReturn } from "react-hook-form";
@@ -21,11 +21,17 @@ export function SignupOtherInput({ form }: { form: UseFormReturn<SignupSchema> }
               {...field}
               id={field.name}
               type="email"
-              placeholder="you@example.com"
+              autoComplete="email"
               aria-invalid={fieldState.invalid}
               className="h-10 rounded-lg text-sm"
             />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            {fieldState.invalid ? (
+              <FieldError errors={[fieldState.error]} />
+            ) : (
+              <FieldDescription className="text-xs font-semibold text-foreground/70">
+                A fake mail won't help you in password recovery.
+              </FieldDescription>
+            )}
           </Field>
         )}
       />
@@ -41,6 +47,7 @@ export function SignupOtherInput({ form }: { form: UseFormReturn<SignupSchema> }
             <PasswordInput
               {...field}
               id={field.name}
+              autoComplete="new-password"
               placeholder="At least 8 characters"
               aria-invalid={fieldState.invalid}
               className="h-10 rounded-lg text-sm"

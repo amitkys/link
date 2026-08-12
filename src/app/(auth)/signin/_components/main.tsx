@@ -8,7 +8,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { LoadingSwap } from "@/components/ui/loading-swap";
 import { signIn } from "@/lib/auth-client";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 // type of signin
 const signinSchema = z.object({
@@ -21,12 +21,14 @@ export type SigninSchema = z.infer<typeof signinSchema>
 
 export function SigninForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialEmail = searchParams.get("email") || "";
 
   // initalization react hook form with type
   const form = useForm<SigninSchema>({
     resolver: zodResolver(signinSchema),
     defaultValues: {
-      email: "",
+      email: initialEmail,
       password: ""
     },
   });
@@ -63,7 +65,7 @@ export function SigninForm() {
               {...field}
               id={field.name}
               type="email"
-              placeholder="you@example.com"
+              autoComplete="email"
               aria-invalid={fieldState.invalid}
               className="h-10 rounded-lg text-sm"
             />
@@ -84,6 +86,7 @@ export function SigninForm() {
             <PasswordInput
               {...field}
               id={field.name}
+              autoComplete="current-password"
               placeholder="Enter your password"
               aria-invalid={fieldState.invalid}
               className="h-10 rounded-lg text-sm"
