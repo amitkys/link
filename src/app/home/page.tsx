@@ -1,28 +1,15 @@
 import type { Metadata } from "next";
-import { getGlobalPlatform } from "./lib/action";
-import PlatformExplorer from "./_components/platform-explorer";
-
-export const dynamic = "force-dynamic";
+import PlatformView from "./_components/platform-view";
 
 export const metadata: Metadata = {
-  title: "Explore Platforms & Links",
-  description: "Discover and explore categorized social platforms, link collections, and creators on Link.",
+  title: "Platforms",
+  description: "View and manage your saved platforms on Link.",
 };
 
-export default async function Page() {
-  const result = await getGlobalPlatform();
-
-  if (!result.success || !result.data) {
-    return (
-      <main className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted-foreground">{result.message}</p>
-      </main>
-    );
-  }
-
+export default function Page() {
   return (
-    <main className="min-h-screen py-6 px-4">
-      <PlatformExplorer platforms={result.data} />
+    <main className="min-h-screen p-4 md:p-8 bg-background">
+      <PlatformView />
     </main>
   );
 }

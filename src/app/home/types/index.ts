@@ -61,17 +61,7 @@ export const CreatePlatformSchema = z.object({
 
 export type CreatePlatformInput = z.infer<typeof CreatePlatformSchema>;
 
-/**
- * Domain interface for a Platform (Parent Folder).
- */
-export interface Platform {
-  id: string;
-  name: string;
-  icon: string | null;
-  userId: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+
 
 /**
  * Domain interface for a saved Link item.

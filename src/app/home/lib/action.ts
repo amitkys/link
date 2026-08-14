@@ -1,504 +1,148 @@
 "use server";
 
 import { db } from "@/db/index";
-
-import {
-  categoryTable,
-  linkTable,
-  linksTagsTable,
-  platformTable,
-  tagTable,
-} from "@/db/schema";
+import { platformTable, userPreferencesTable } from "@/db/schema";
 import { auth } from "@/lib/auth";
-import { and, eq, isNull } from "drizzle-orm";
+import { redis } from "@/lib/redis";
+import { and, eq, sql } from "drizzle-orm";
 import { headers } from "next/headers";
-import {
-  ActionResponse,
-  CreateLinkInput,
-  CreateLinkSchema,
-  CreatePlatformInput,
-  CreatePlatformSchema,
-  LinkItem,
-  Platform,
-} from "../types";
 
-export async function createPlatform(
-  rawInput: CreatePlatformInput
-): Promise<ActionResponse<Platform>> {
+/**
+ * Fetches platforms for authenticated user.
+ * Implements Option A1 Lazy Sync: Flushes pending Redis visit counts to Postgres before querying.
+ */
+export async function getPlatformAction() {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session) {
-      return { success: false, message: "User not authenticated" };
-    }
-
-    const userId = session.user.id;
-
-    const parsed = CreatePlatformSchema.safeParse(rawInput);
-    if (!parsed.success) {
-      const firstIssue = parsed.error.issues[0];
-      return {
-        success: false,
-        message: firstIssue ? firstIssue.message : "Invalid parent folder payload",
-      };
-    }
-
-    const { name, icon } = parsed.data;
-
-    const [newPlatform] = await db
-      .insert(platformTable)
-      .values({
-        userId,
-        name,
-        icon: icon || null,
-      })
-      .returning();
-
-    return {
-      success: true,
-      message: "Parent folder created successfully",
-      data: newPlatform,
-    };
-  } catch (error: unknown) {
-    console.log("🚀 ~ createPlatform ~ error:", error);
-    const dbErr = error as { code?: string; message?: string };
-    if (dbErr?.code === "23505" || dbErr?.message?.includes("unique")) {
-      return {
-        success: false,
-        message: "A parent folder with this name already exists",
-      };
-    }
-    return { success: false, message: "Failed to create parent folder" };
-  }
-}
-
-export async function getGlobalPlatform() {
-  try {
-    // get user session
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
+    const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return { success: false, message: "User not authenticated" };
 
     const userId = session.user.id;
+    const redisKey = `user:${userId}:pending_platform_visits`;
 
+    // 1. Lazy Sync from Redis to DB
+    try {
+      const pendingVisits = await redis.hgetall<Record<string, number>>(redisKey);
+      if (pendingVisits && Object.keys(pendingVisits).length > 0) {
+        for (const [platformId, count] of Object.entries(pendingVisits)) {
+          const incrementBy = Number(count) || 0;
+          if (incrementBy > 0) {
+            await db
+              .update(platformTable)
+              .set({
+                visitedTimes: sql`${platformTable.visitedTimes} + ${incrementBy}`,
+                lastVisitedAt: new Date(),
+              })
+              .where(
+                and(
+                  eq(platformTable.id, platformId),
+                  eq(platformTable.userId, userId)
+                )
+              );
+          }
+        }
+        // Clear flushed visits from Redis
+        await redis.del(redisKey);
+      }
+    } catch (redisError) {
+      console.error("getPlatformAction Redis sync error", redisError);
+      // Fallback: proceed to return DB platforms even if Redis sync has network issue
+    }
+
+    // 2. Query platforms from PostgreSQL
     const platforms = await db
       .select()
       .from(platformTable)
       .where(eq(platformTable.userId, userId));
 
-    return {
-      success: true,
-      message: "Platforms fetched successfully",
-      data: platforms,
-    };
+    return { success: true, data: platforms };
   } catch (error) {
-    console.log("🚀 ~ getGlobalPlatform ~ error:", error);
+    console.error("getPlatformAction error", error);
     return { success: false, message: "Failed to fetch platforms" };
   }
 }
 
 /**
- * Fetches top-level categories (parentId IS NULL) for a given platform,
- * scoped to the authenticated user.
+ * Records a platform visit by atomically incrementing visit counter in Redis Hash.
  */
-export async function getCategoriesForPlatform(platformId: string) {
+export async function recordPlatformVisitAction(platformId: string) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
+    const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return { success: false, message: "User not authenticated" };
 
     const userId = session.user.id;
+    const redisKey = `user:${userId}:pending_platform_visits`;
 
-    const categories = await db
-      .select()
-      .from(categoryTable)
-      .where(
-        and(
-          eq(categoryTable.userId, userId),
-          eq(categoryTable.platformId, platformId),
-          isNull(categoryTable.parentId)
-        )
-      );
+    // Increment in Redis Hash instantly
+    await redis.hincrby(redisKey, platformId, 1);
 
-    return {
-      success: true,
-      message: "Categories fetched successfully",
-      data: categories,
-    };
+    return { success: true, data: null };
   } catch (error) {
-    console.log("🚀 ~ getCategoriesForPlatform ~ error:", error);
-    return { success: false, message: "Failed to fetch categories" };
+    console.error("recordPlatformVisitAction error", error);
+    return { success: false, message: "Failed to record platform visit" };
   }
 }
 
 /**
- * Fetches direct child categories of a given parent category,
- * scoped to the authenticated user.
+ * Fetches saved user preferences from DB.
  */
-export async function getSubcategories(categoryId: string) {
+export async function getUserPreferencesAction() {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
+    const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return { success: false, message: "User not authenticated" };
 
     const userId = session.user.id;
 
-    const subcategories = await db
+    const preferences = await db
       .select()
-      .from(categoryTable)
-      .where(
-        and(
-          eq(categoryTable.userId, userId),
-          eq(categoryTable.parentId, categoryId)
-        )
-      );
+      .from(userPreferencesTable)
+      .where(eq(userPreferencesTable.userId, userId))
+      .limit(1);
 
-    return {
-      success: true,
-      message: "Subcategories fetched successfully",
-      data: subcategories,
-    };
+    if (preferences.length === 0) {
+      return { success: true, data: null };
+    }
+
+    return { success: true, data: preferences[0] };
   } catch (error) {
-    console.log("🚀 ~ getSubcategories ~ error:", error);
-    return { success: false, message: "Failed to fetch subcategories" };
+    console.error("getUserPreferencesAction error", error);
+    return { success: false, message: "Failed to fetch user preferences" };
   }
 }
 
-export interface CreateFolderParams {
-  name: string;
-  platformId?: string | null;
-  parentId?: string | null;
-}
-
 /**
- * Creates a new folder (category or subcategory) scoped to the authenticated user.
+ * Upserts user preferences in DB for cross-device persistence.
  */
-export async function createFolder({
-  name,
-  platformId,
-  parentId,
-}: CreateFolderParams) {
+export async function updateUserPreferencesAction(input: {
+  viewMode?: "grid" | "list" | "compact";
+  sortBy?: "newest" | "oldest" | "most-visited" | "name";
+}) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
+    const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return { success: false, message: "User not authenticated" };
 
     const userId = session.user.id;
 
-    const trimmedName = name.trim();
-    if (!trimmedName) {
-      return { success: false, message: "Folder name cannot be empty" };
-    }
-    if (trimmedName.length > 50) {
-      return {
-        success: false,
-        message: "Folder name must be 50 characters or less",
-      };
-    }
-
-    let finalPlatformId = platformId || null;
-
-    // If creating under a parent category, verify parent exists and belongs to user
-    if (parentId) {
-      const parent = await db
-        .select()
-        .from(categoryTable)
-        .where(
-          and(
-            eq(categoryTable.id, parentId),
-            eq(categoryTable.userId, userId)
-          )
-        )
-        .limit(1);
-
-      if (!parent || parent.length === 0) {
-        return { success: false, message: "Parent folder not found" };
-      }
-
-      // Inherit platformId from parent if not explicitly provided
-      if (!finalPlatformId && parent[0].platformId) {
-        finalPlatformId = parent[0].platformId;
-      }
-    } else if (platformId) {
-      // Top-level folder under a platform: verify platform exists and belongs to user
-      const platform = await db
-        .select()
-        .from(platformTable)
-        .where(
-          and(
-            eq(platformTable.id, platformId),
-            eq(platformTable.userId, userId)
-          )
-        )
-        .limit(1);
-
-      if (!platform || platform.length === 0) {
-        return { success: false, message: "Platform not found" };
-      }
-    } else {
-      return {
-        success: false,
-        message: "Target platform or parent folder is required",
-      };
-    }
-
-    // Insert new category row
-    const [newFolder] = await db
-      .insert(categoryTable)
+    const [updatedPref] = await db
+      .insert(userPreferencesTable)
       .values({
         userId,
-        name: trimmedName,
-        parentId: parentId || null,
-        platformId: finalPlatformId,
+        viewMode: input.viewMode ?? "grid",
+        sortBy: input.sortBy ?? "newest",
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: userPreferencesTable.userId,
+        set: {
+          ...(input.viewMode ? { viewMode: input.viewMode } : {}),
+          ...(input.sortBy ? { sortBy: input.sortBy } : {}),
+          updatedAt: new Date(),
+        },
       })
       .returning();
 
-    return {
-      success: true,
-      message: "Folder created successfully",
-      data: newFolder,
-    };
-  } catch (error: unknown) {
-    console.log("🚀 ~ createFolder ~ error:", error);
-    const dbErr = error as { code?: string; message?: string };
-    if (dbErr?.code === "23505" || dbErr?.message?.includes("unique")) {
-      return {
-        success: false,
-        message: "A folder with this name already exists here",
-      };
-    }
-    return { success: false, message: "Failed to create folder" };
-  }
-}
-
-/**
- * Saves a new link, optionally assigning tags and associating it with a platform/category.
- */
-export async function createLink(
-  rawInput: CreateLinkInput
-): Promise<ActionResponse<LinkItem>> {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session) {
-      return { success: false, message: "User not authenticated" };
-    }
-
-    const userId = session.user.id;
-
-    // Runtime validate untrusted payload using Zod
-    const parsed = CreateLinkSchema.safeParse(rawInput);
-    if (!parsed.success) {
-      const firstIssue = parsed.error.issues[0];
-      return {
-        success: false,
-        message: firstIssue ? firstIssue.message : "Invalid link payload",
-      };
-    }
-
-    const {
-      url,
-      title,
-      description,
-      thumbnail,
-      platformId,
-      categoryId,
-      isFavorite,
-      tags,
-    } = parsed.data;
-
-    // Verify platform ownership
-    const platform = await db
-      .select()
-      .from(platformTable)
-      .where(
-        and(eq(platformTable.id, platformId), eq(platformTable.userId, userId))
-      )
-      .limit(1);
-
-    if (!platform || platform.length === 0) {
-      return { success: false, message: "Platform not found or access denied" };
-    }
-
-    // Verify category ownership if categoryId is provided
-    if (categoryId) {
-      const category = await db
-        .select()
-        .from(categoryTable)
-        .where(
-          and(
-            eq(categoryTable.id, categoryId),
-            eq(categoryTable.userId, userId)
-          )
-        )
-        .limit(1);
-
-      if (!category || category.length === 0) {
-        return { success: false, message: "Folder not found or access denied" };
-      }
-    }
-
-    // Execute insert in a database transaction
-    const newLink = await db.transaction(async (tx) => {
-      const [insertedLink] = await tx
-        .insert(linkTable)
-        .values({
-          userId,
-          url,
-          title: title || null,
-          description: description || null,
-          thumbnail: thumbnail || null,
-          platformId,
-          categoryId: categoryId || null,
-          isFavorite: isFavorite ?? false,
-        })
-        .returning();
-
-      const tagNames: string[] = [];
-
-      if (tags && tags.length > 0) {
-        for (const rawTag of tags) {
-          const cleanTag = rawTag.trim().toLowerCase();
-          if (!cleanTag) continue;
-
-          const [tagRecord] = await tx
-            .insert(tagTable)
-            .values({ userId, name: cleanTag })
-            .onConflictDoUpdate({
-              target: [tagTable.userId, tagTable.name],
-              set: { name: cleanTag },
-            })
-            .returning();
-
-          if (tagRecord) {
-            await tx
-              .insert(linksTagsTable)
-              .values({
-                linkId: insertedLink.id,
-                tagId: tagRecord.id,
-              })
-              .onConflictDoNothing();
-            tagNames.push(cleanTag);
-          }
-        }
-      }
-
-      return {
-        ...insertedLink,
-        tags: tagNames,
-      };
-    });
-
-    return {
-      success: true,
-      message: "Link saved successfully",
-      data: newLink,
-    };
-  } catch (error: unknown) {
-    console.log("🚀 ~ createLink ~ error:", error);
-    const dbErr = error as { code?: string; message?: string };
-    if (dbErr?.code === "23505" || dbErr?.message?.includes("unique")) {
-      return {
-        success: false,
-        message: "You have already saved this link URL",
-      };
-    }
-    return { success: false, message: "Failed to save link" };
-  }
-}
-
-/**
- * Fetches saved links for a platform or category.
- */
-export async function getLinksForContext(params: {
-  platformId?: string | null;
-  categoryId?: string | null;
-}): Promise<ActionResponse<LinkItem[]>> {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session) {
-      return { success: false, message: "User not authenticated" };
-    }
-
-    const userId = session.user.id;
-
-    if (params.categoryId) {
-      const links = await db
-        .select()
-        .from(linkTable)
-        .where(
-          and(
-            eq(linkTable.userId, userId),
-            eq(linkTable.categoryId, params.categoryId)
-          )
-        );
-
-      return {
-        success: true,
-        message: "Links fetched successfully",
-        data: links,
-      };
-    }
-
-    if (params.platformId) {
-      const links = await db
-        .select()
-        .from(linkTable)
-        .where(
-          and(
-            eq(linkTable.userId, userId),
-            eq(linkTable.platformId, params.platformId),
-            isNull(linkTable.categoryId)
-          )
-        );
-
-      return {
-        success: true,
-        message: "Links fetched successfully",
-        data: links,
-      };
-    }
-
-    return { success: true, message: "No context specified", data: [] };
-  } catch (error: unknown) {
-    console.log("🚀 ~ getLinksForContext ~ error:", error);
-    return { success: false, message: "Failed to fetch links" };
-  }
-}
-
-export async function getPlatform() {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session) return { success: false, message: "User not authenticated" };
-
-    const userId = session.user.id;
-
-    const platform = await db
-      .select()
-      .from(platformTable)
-      .where(eq(platformTable.userId, userId));
-
-    return { success: true, message: "Platform fetched successfully", data: platform };
+    return { success: true, data: updatedPref };
   } catch (error) {
-    console.log("🚀 ~ getPlatform ~ error:", error);
-    return { success: false, message: "Failed to fetch platform" };
+    console.error("updateUserPreferencesAction error", error);
+    return { success: false, message: "Failed to update user preferences" };
   }
 }
