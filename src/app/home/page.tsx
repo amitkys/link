@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import PlatformView from "./_components/platform-view";
+import HomeExplorer from "./_components/home-explorer";
 
 export const metadata: Metadata = {
   title: "Platforms",
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 export default function Page() {
   return (
     <main className="min-h-screen p-4 md:p-8 bg-background">
-      <PlatformView />
+      <HomeExplorer />
     </main>
   );
 }

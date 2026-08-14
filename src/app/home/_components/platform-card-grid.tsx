@@ -1,26 +1,43 @@
 "use client";
 
 import type { Platform } from "@/app/home/query/get";
+import {
+  getCategoriesQuery,
+  useGetPlatformQuery,
+} from "@/app/home/query/get";
+import { useRecordPlatformVisitMutation } from "@/app/home/query/update";
 import { IconCalendar, IconEye, IconFolder } from "@tabler/icons-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 interface PlatformCardGridProps {
   platform: Platform;
-  onPlatformClick: (id: string) => void;
 }
 
-export function PlatformCardGrid({
-  platform,
-  onPlatformClick,
-}: PlatformCardGridProps) {
+export function PlatformCardGrid({ platform }: PlatformCardGridProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const recordVisitMutation = useRecordPlatformVisitMutation();
+
   const formattedDate = new Date(platform.createdAt).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
 
+  const handleClick = () => {
+    recordVisitMutation.mutate(platform.id);
+    router.push(`/home?platform=${platform.id}`, { scroll: false });
+  };
+
+  const handleMouseEnter = () => {
+    queryClient.prefetchQuery(getCategoriesQuery(platform.id));
+  };
+
   return (
     <div
-      onClick={() => onPlatformClick(platform.id)}
+      onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
       className="group relative flex flex-col justify-between bg-card hover:bg-accent/40 border border-border hover:border-primary/40 rounded-xl p-5 transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer"
     >
       <div className="space-y-3">
@@ -61,3 +78,6 @@ export function PlatformCardGrid({
     </div>
   );
 }
+
+// Re-export useGetPlatformQuery for hover prefetch usage
+export { useGetPlatformQuery };

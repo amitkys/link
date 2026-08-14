@@ -4,10 +4,7 @@ import {
   useGetPlatformQuery,
   useGetUserPreferencesQuery,
 } from "@/app/home/query/get";
-import {
-  useRecordPlatformVisitMutation,
-  useUpdateUserPreferencesMutation,
-} from "@/app/home/query/update";
+import { useUpdateUserPreferencesMutation } from "@/app/home/query/update";
 import { Button } from "@/components/ui/button";
 import {
   SortOption,
@@ -34,7 +31,6 @@ export default function PlatformView() {
   const { data: platforms, isLoading, isError, error, refetch } = useGetPlatformQuery();
   const { data: remotePreferences } = useGetUserPreferencesQuery();
   const updatePreferencesMutation = useUpdateUserPreferencesMutation();
-  const recordVisitMutation = useRecordPlatformVisitMutation();
 
   const viewMode = useViewMode();
   const sortBy = useSortBy();
@@ -52,21 +48,14 @@ export default function PlatformView() {
     }
   }, [remotePreferences, setPreferences]);
 
-  // Handler for changing view mode (Instant Zustand + LocalStorage update + DB background sync)
   const handleViewModeChange = (mode: ViewMode) => {
     setViewMode(mode);
     updatePreferencesMutation.mutate({ viewMode: mode, sortBy });
   };
 
-  // Handler for changing sort option (Instant Zustand + LocalStorage update + DB background sync)
   const handleSortByChange = (sort: SortOption) => {
     setSortBy(sort);
     updatePreferencesMutation.mutate({ viewMode, sortBy: sort });
-  };
-
-  // Handler when clicking a platform (optimistically updates UI by +1, records visit in Redis)
-  const handlePlatformClick = (platformId: string) => {
-    recordVisitMutation.mutate(platformId);
   };
 
   const filteredAndSortedPlatforms = useMemo(() => {
@@ -174,7 +163,6 @@ export default function PlatformView() {
                 <PlatformCardGrid
                   key={platform.id}
                   platform={platform}
-                  onPlatformClick={handlePlatformClick}
                 />
               ))}
             </div>
@@ -186,7 +174,6 @@ export default function PlatformView() {
                 <PlatformCardList
                   key={platform.id}
                   platform={platform}
-                  onPlatformClick={handlePlatformClick}
                 />
               ))}
             </div>
@@ -198,7 +185,6 @@ export default function PlatformView() {
                 <PlatformCardCompact
                   key={platform.id}
                   platform={platform}
-                  onPlatformClick={handlePlatformClick}
                 />
               ))}
             </div>

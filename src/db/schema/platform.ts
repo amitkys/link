@@ -72,6 +72,12 @@ export const categoryTable = pgTable(
       onDelete: "set null",
     }),
 
+    visitedTimes: integer("visited_times").default(0).notNull(),
+    lastVisitedAt: timestamp("last_visited_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
       .notNull()
       .$defaultFn(() => new Date()),

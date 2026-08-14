@@ -12,6 +12,9 @@ import {
 } from "@tabler/icons-react";
 
 interface PlatformControlsProps {
+  title?: string;
+  subtitle?: string;
+  searchPlaceholder?: string;
   searchQuery: string;
   onSearchChange: (value: string) => void;
   sortBy: SortOption;
@@ -21,6 +24,9 @@ interface PlatformControlsProps {
 }
 
 export function PlatformControls({
+  title = "Platforms",
+  subtitle = "Manage and view your saved platforms and link collections.",
+  searchPlaceholder = "Search platforms...",
   searchQuery,
   onSearchChange,
   sortBy,
@@ -33,10 +39,10 @@ export function PlatformControls({
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
           <IconFolder className="w-7 h-7 text-primary" />
-          Platforms
+          {title}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Manage and view your saved platforms and link collections.
+          {subtitle}
         </p>
       </div>
 
@@ -47,7 +53,7 @@ export function PlatformControls({
           <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search platforms..."
+            placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-9 bg-background/80"

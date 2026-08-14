@@ -1,26 +1,40 @@
 "use client";
 
 import type { Platform } from "@/app/home/query/get";
+import { getCategoriesQuery } from "@/app/home/query/get";
+import { useRecordPlatformVisitMutation } from "@/app/home/query/update";
 import { IconCalendar, IconEye, IconFolder } from "@tabler/icons-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 interface PlatformCardListProps {
   platform: Platform;
-  onPlatformClick: (id: string) => void;
 }
 
-export function PlatformCardList({
-  platform,
-  onPlatformClick,
-}: PlatformCardListProps) {
+export function PlatformCardList({ platform }: PlatformCardListProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const recordVisitMutation = useRecordPlatformVisitMutation();
+
   const formattedDate = new Date(platform.createdAt).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
 
+  const handleClick = () => {
+    recordVisitMutation.mutate(platform.id);
+    router.push(`/home?platform=${platform.id}`, { scroll: false });
+  };
+
+  const handleMouseEnter = () => {
+    queryClient.prefetchQuery(getCategoriesQuery(platform.id));
+  };
+
   return (
     <div
-      onClick={() => onPlatformClick(platform.id)}
+      onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
       className="flex items-center justify-between p-4 hover:bg-accent/30 transition-colors group cursor-pointer"
     >
       <div className="flex items-center gap-4 min-w-0">

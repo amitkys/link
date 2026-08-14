@@ -1,10 +1,15 @@
 "use server";
 
 import { db } from "@/db/index";
-import { platformTable, userPreferencesTable } from "@/db/schema";
+import {
+  categoryTable,
+  linkTable,
+  platformTable,
+  userPreferencesTable,
+} from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { redis } from "@/lib/redis";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 
 /**
@@ -40,12 +45,10 @@ export async function getPlatformAction() {
               );
           }
         }
-        // Clear flushed visits from Redis
         await redis.del(redisKey);
       }
     } catch (redisError) {
       console.error("getPlatformAction Redis sync error", redisError);
-      // Fallback: proceed to return DB platforms even if Redis sync has network issue
     }
 
     // 2. Query platforms from PostgreSQL
@@ -72,13 +75,129 @@ export async function recordPlatformVisitAction(platformId: string) {
     const userId = session.user.id;
     const redisKey = `user:${userId}:pending_platform_visits`;
 
-    // Increment in Redis Hash instantly
     await redis.hincrby(redisKey, platformId, 1);
 
     return { success: true, data: null };
   } catch (error) {
     console.error("recordPlatformVisitAction error", error);
     return { success: false, message: "Failed to record platform visit" };
+  }
+}
+
+export async function recordCategoryVisitAction(categoryId: string) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return { success: false, message: "User not authenticated" };
+
+    const userId = session.user.id;
+    const redisKey = `user:${userId}:pending_category_visits`;
+
+    await redis.hincrby(redisKey, categoryId, 1);
+
+    return { success: true, data: null };
+  } catch (error) {
+    console.error("recordCategoryVisitAction error", error);
+    return { success: false, message: "Failed to record category visit" };
+  }
+}
+
+/**
+ * Fetches categories for a platform, scoped to the authenticated user.
+ * If parentId is provided, fetches subcategories of that parent.
+ * If parentId is null/undefined, fetches top-level categories (parentId IS NULL).
+ * Implements Option A1 Lazy Sync for category visit counts.
+ */
+export async function getCategoriesAction(platformId: string, parentId?: string | null) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return { success: false, message: "User not authenticated" };
+
+    const userId = session.user.id;
+    const redisKey = `user:${userId}:pending_category_visits`;
+
+    // 1. Lazy Sync from Redis to DB
+    try {
+      const pendingVisits = await redis.hgetall<Record<string, number>>(redisKey);
+      if (pendingVisits && Object.keys(pendingVisits).length > 0) {
+        for (const [categoryId, count] of Object.entries(pendingVisits)) {
+          const incrementBy = Number(count) || 0;
+          if (incrementBy > 0) {
+            await db
+              .update(categoryTable)
+              .set({
+                visitedTimes: sql`${categoryTable.visitedTimes} + ${incrementBy}`,
+                lastVisitedAt: new Date(),
+              })
+              .where(
+                and(
+                  eq(categoryTable.id, categoryId),
+                  eq(categoryTable.userId, userId)
+                )
+              );
+          }
+        }
+        await redis.del(redisKey);
+      }
+    } catch (redisError) {
+      console.error("getCategoriesAction Redis sync error", redisError);
+    }
+
+    const conditions = [
+      eq(categoryTable.userId, userId),
+      eq(categoryTable.platformId, platformId),
+    ];
+
+    if (parentId) {
+      conditions.push(eq(categoryTable.parentId, parentId));
+    } else {
+      conditions.push(isNull(categoryTable.parentId));
+    }
+
+    const categories = await db
+      .select()
+      .from(categoryTable)
+      .where(and(...conditions));
+
+    return { success: true, data: categories };
+  } catch (error) {
+    console.error("getCategoriesAction error", error);
+    return { success: false, message: "Failed to fetch categories" };
+  }
+}
+
+/**
+ * Fetches links for a given context (platform root or category), scoped to user.
+ */
+export async function getLinksAction(params: {
+  platformId: string;
+  categoryId?: string | null;
+}) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return { success: false, message: "User not authenticated" };
+
+    const userId = session.user.id;
+
+    const conditions = [
+      eq(linkTable.userId, userId),
+      eq(linkTable.platformId, params.platformId),
+    ];
+
+    if (params.categoryId) {
+      conditions.push(eq(linkTable.categoryId, params.categoryId));
+    } else {
+      conditions.push(isNull(linkTable.categoryId));
+    }
+
+    const links = await db
+      .select()
+      .from(linkTable)
+      .where(and(...conditions));
+
+    return { success: true, data: links };
+  } catch (error) {
+    console.error("getLinksAction error", error);
+    return { success: false, message: "Failed to fetch links" };
   }
 }
 

@@ -1,20 +1,34 @@
 "use client";
 
 import type { Platform } from "@/app/home/query/get";
+import { getCategoriesQuery } from "@/app/home/query/get";
+import { useRecordPlatformVisitMutation } from "@/app/home/query/update";
 import { IconFolder } from "@tabler/icons-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 interface PlatformCardCompactProps {
   platform: Platform;
-  onPlatformClick: (id: string) => void;
 }
 
-export function PlatformCardCompact({
-  platform,
-  onPlatformClick,
-}: PlatformCardCompactProps) {
+export function PlatformCardCompact({ platform }: PlatformCardCompactProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const recordVisitMutation = useRecordPlatformVisitMutation();
+
+  const handleClick = () => {
+    recordVisitMutation.mutate(platform.id);
+    router.push(`/home?platform=${platform.id}`, { scroll: false });
+  };
+
+  const handleMouseEnter = () => {
+    queryClient.prefetchQuery(getCategoriesQuery(platform.id));
+  };
+
   return (
     <div
-      onClick={() => onPlatformClick(platform.id)}
+      onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
       className="flex items-center justify-between p-3 rounded-lg border border-border bg-card hover:bg-accent/40 hover:border-primary/40 transition-all group cursor-pointer"
     >
       <div className="flex items-center gap-2.5 min-w-0">

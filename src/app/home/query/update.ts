@@ -1,4 +1,5 @@
 import {
+  recordCategoryVisitAction,
   recordPlatformVisitAction,
   updateUserPreferencesAction,
 } from "@/app/home/lib/action";
@@ -24,6 +25,18 @@ export function useRecordPlatformVisitMutation() {
     onSuccess: (res) => {
       if (!res.success) return;
       queryClient.invalidateQueries({ queryKey: ["get-platform"] });
+    },
+  });
+}
+
+export function useRecordCategoryVisitMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: recordCategoryVisitAction,
+    onSuccess: (res) => {
+      if (!res.success) return;
+      queryClient.invalidateQueries({ queryKey: ["get-categories"] });
     },
   });
 }
