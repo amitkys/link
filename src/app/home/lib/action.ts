@@ -480,3 +480,25 @@ export async function getLinksForContext(params: {
     return { success: false, message: "Failed to fetch links" };
   }
 }
+
+export async function getPlatform() {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session) return { success: false, message: "User not authenticated" };
+
+    const userId = session.user.id;
+
+    const platform = await db
+      .select()
+      .from(platformTable)
+      .where(eq(platformTable.userId, userId));
+
+    return { success: true, message: "Platform fetched successfully", data: platform };
+  } catch (error) {
+    console.log("🚀 ~ getPlatform ~ error:", error);
+    return { success: false, message: "Failed to fetch platform" };
+  }
+}

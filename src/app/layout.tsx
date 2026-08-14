@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { CustomeToast } from "./(auth)/signup/_components/toast-provider";
+import QueryProvider from "@/components/query-provider";
 
 const inter = Inter({ subsets: ['latin'], weight: ["500", "600", "700", "800", "900"], variable: '--font-sans' });
 
@@ -78,7 +79,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <main>
-          {children}
+          <QueryProvider>
+            {children}
+          </QueryProvider>
         </main>
         <CustomeToast />
       </body>
