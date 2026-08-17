@@ -1,4 +1,4 @@
-import { generateUniqueId } from "@/lib/utils";
+import { generateUniqueId } from "../../lib/utils";
 import { defineRelationsPart } from "drizzle-orm";
 import {
   boolean,
