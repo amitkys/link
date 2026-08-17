@@ -17,15 +17,6 @@ export default function Page() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             Welcome back
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/signup"
-              className="font-medium text-primary underline-offset-4 hover:underline"
-            >
-              Sign up
-            </Link>
-          </p>
         </div>
 
         {/* Card */}

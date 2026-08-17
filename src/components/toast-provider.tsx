@@ -16,7 +16,8 @@ export function CustomeToast() {
                     info: "!bg-sky-600 !text-white !border-sky-600",
                     warning: "!bg-amber-600 !text-white !border-amber-600",
                 },
-            }}
+            }
+            }
         />
     );
 }
