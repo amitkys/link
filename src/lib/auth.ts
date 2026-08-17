@@ -27,6 +27,7 @@ export const auth = betterAuth({
     passkey({
       rpID: getRpID(),
       rpName: "link",
+      origin: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BETTER_AUTH_URL || null,
     }),
     magicLink({
       sendMagicLink: async ({ email, url }) => {
