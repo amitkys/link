@@ -2,11 +2,13 @@
 
 import { Input } from "@/components/ui/input";
 import { SortOption, ViewMode } from "@/store/use-user-preferences-store";
+import { authClient } from "@/lib/auth-client";
 import {
   IconFolder,
   IconLayoutGrid,
   IconLayoutList,
   IconList,
+  IconLogout,
   IconSearch,
   IconSortAscending,
 } from "@tabler/icons-react";
@@ -117,6 +119,18 @@ export function PlatformControls({
             <span className="hidden sm:inline">Compact</span>
           </button>
         </div>
+
+        {/* Logout */}
+        <button
+          type="button"
+          onClick={() =>
+            authClient.signOut({ fetchOptions: { onSuccess: () => { window.location.href = "/signin"; } } })
+          }
+          className="p-2 rounded-lg border border-border/40 bg-background/80 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+          title="Sign out"
+        >
+          <IconLogout className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );
