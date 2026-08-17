@@ -41,9 +41,9 @@ export function sendMagicLinkEmail({
         <p>Click the button below to sign in:</p>
         <a href="${url}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 16px 0;">Sign In</a>
         <p>If you didn't request this email, you can safely ignore it.</p>
-        <p>Best regards,<br>Your App Team</p>
+        <p>Best regards,<br>Id0 Team</p>
       </div>
     `,
-        text: `Click this link to sign in: ${url}\n\nIf you didn't request this email, you can safely ignore it.\n\nBest regards,\nYour App Team`,
+        text: `Click this link to sign in: ${url}\n\nIf you didn't request this email, you can safely ignore it.\n\nBest regards,\nId0 Team`,
     });
 }

@@ -96,20 +96,19 @@ export function SigninForm() {
   if (linkSent) {
     const sentEmail = form.getValues("email");
     return (
-      <div className="flex flex-col items-center justify-center py-4 space-y-4 text-center">
-        <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <IconMailCheck className="size-6" />
-        </div>
-        <div className="space-y-1">
-          <h2 className="text-xl font-bold tracking-tight text-foreground">
-            Check your email
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            We sent a sign-in link to{" "}
-            <span className="font-medium text-foreground">{sentEmail}</span>. It
-            expires shortly.
-          </p>
-        </div>
+      <div className="flex flex-col items-center justify-center py-2 space-y-4 text-center">
+        <p className="text-sm text-muted-foreground">
+          Sign-in link sent to <span className="font-medium text-foreground">{sentEmail}</span>.
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setLinkSent(false)}
+          className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+        >
+          Use a different email
+        </Button>
       </div>
     );
   }
@@ -117,11 +116,11 @@ export function SigninForm() {
   const isSubmitting = form.formState.isSubmitting;
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Passkey Button */}
+    <div className="flex flex-col gap-3">
+      {/* Passkey Button — Primary */}
       <Button
         type="button"
-        variant="outline"
+        variant="default"
         onClick={handlePasskeyLogin}
         disabled={isSubmitting || passkeyLoading}
         className="h-11 w-full cursor-pointer text-sm font-semibold tracking-wide"
@@ -135,15 +134,17 @@ export function SigninForm() {
       </Button>
 
       {/* Divider */}
-      <div className="relative flex items-center justify-center">
+      <div className="relative flex items-center justify-center my-0.5">
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t border-border" />
+        </div>
+        <div className="relative bg-card px-3 text-xs uppercase tracking-wider text-muted-foreground font-medium">
           or
         </div>
       </div>
 
       {/* Magic Link Form */}
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-3">
         <Controller
           control={form.control}
           name="email"
@@ -157,16 +158,28 @@ export function SigninForm() {
                 id={field.name}
                 type="email"
                 autoComplete="username webauthn"
+                autoFocus
                 aria-invalid={fieldState.invalid}
                 className="h-10 rounded-lg text-sm"
-                placeholder="name@example.com"
               />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>
           )}
         />
 
-        {/* Root-level error message */}
+        {/* Submit Button — Secondary */}
+        <Button
+          type="submit"
+          variant="outline"
+          disabled={isSubmitting || passkeyLoading}
+          className="h-10 w-full cursor-pointer text-sm font-semibold tracking-wide"
+        >
+          <LoadingSwap isLoading={isSubmitting}>
+            Continue
+          </LoadingSwap>
+        </Button>
+
+        {/* Root-level error message — below Continue button */}
         {form.formState.errors.root && (
           <div
             className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive"
@@ -187,17 +200,6 @@ export function SigninForm() {
             {form.formState.errors.root.message}
           </div>
         )}
-
-        {/* Submit Button */}
-        <Button
-          type="submit"
-          disabled={isSubmitting || passkeyLoading}
-          className="mt-1 h-10 w-full cursor-pointer text-sm font-semibold tracking-wide"
-        >
-          <LoadingSwap isLoading={isSubmitting}>
-            Email me a sign-in link
-          </LoadingSwap>
-        </Button>
       </form>
     </div>
   );
