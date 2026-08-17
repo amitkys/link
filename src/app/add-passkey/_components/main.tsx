@@ -10,11 +10,13 @@ import { toast } from "sonner";
 
 function generatePasskeyName(email: string) {
   const prefix = email.split("@")[0] ?? "passkey";
-  const date = new Date().toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-  return `${prefix} — ${date}`;
+  const now = new Date();
+  const day = now.getDate();
+  const month = now.toLocaleDateString("en-US", { month: "short" }).toLowerCase();
+  const year = now.getFullYear().toString().slice(-2);
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  return `${prefix} — ${day} ${month}, ${year}; ${hours}:${minutes}`;
 }
 
 export function AddPasskeyForm({ userEmail }: { userEmail: string }) {
