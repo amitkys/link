@@ -63,14 +63,13 @@ export function SigninForm() {
   async function handlePasskeyLogin() {
     form.clearErrors();
     setPasskeyLoading(true);
-    const { error } = await authClient.signIn.passkey({
-      extensions: { credProps: true },
-    });
+    const { error } = await authClient.signIn.passkey();
     setPasskeyLoading(false);
 
     if (error) {
+      console.error("[Passkey sign-in error]:", error);
       form.setError("root", {
-        message: "Couldn't sign in with passkey. You can use email instead.",
+        message: error.message || "Couldn't sign in with passkey. You can use email instead.",
       });
       return;
     }
