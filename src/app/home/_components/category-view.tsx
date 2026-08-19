@@ -2,9 +2,8 @@
 
 import type { Category } from "@/app/home/query/get";
 import {
-  getCategoriesQuery,
   getLinksQuery,
-  useGetCategoriesQuery,
+  useGetAllCategoriesQuery,
   useGetLinksQuery,
 } from "@/app/home/query/get";
 import {
@@ -57,14 +56,22 @@ export function CategoryView({ platformId }: CategoryViewProps) {
 
   const categoryId = searchParams.get("category");
 
-  // Fetch categories at current level (top-level if categoryId is null, subcategories if categoryId is present)
+  // Fetch all categories for the platform once for instant subdirectory filtering
   const {
-    data: categories,
+    data: allCategories,
     isLoading: categoriesLoading,
     isError: categoriesError,
     error: catError,
     refetch: refetchCategories,
-  } = useGetCategoriesQuery(platformId, categoryId);
+  } = useGetAllCategoriesQuery(platformId);
+
+  // Filter categories at current level (top-level if categoryId is null, subcategories if categoryId is set)
+  const currentLevelCategories = useMemo(() => {
+    if (!allCategories) return [];
+    return allCategories.filter((c) =>
+      categoryId ? c.parentId === categoryId : !c.parentId
+    );
+  }, [allCategories, categoryId]);
 
   // Fetch links at current level
   const {
@@ -75,7 +82,7 @@ export function CategoryView({ platformId }: CategoryViewProps) {
     refetch: refetchLinks,
   } = useGetLinksQuery({ platformId, categoryId });
 
-  const isLoading = categoriesLoading || linksLoading;
+  const isLoading = (categoriesLoading && !allCategories) || (linksLoading && !links);
   const isError = categoriesError || linksError;
   const errorMessage = catError?.message || lnkError?.message || "Failed to load data";
 
@@ -97,15 +104,14 @@ export function CategoryView({ platformId }: CategoryViewProps) {
   };
 
   const handleCategoryHover = (category: Category) => {
-    queryClient.prefetchQuery(getCategoriesQuery(platformId, category.id));
     queryClient.prefetchQuery(getLinksQuery({ platformId, categoryId: category.id }));
   };
 
   // Filter and sort categories
   const filteredAndSortedCategories = useMemo(() => {
-    if (!categories) return [];
+    if (!currentLevelCategories) return [];
 
-    let result = [...categories];
+    let result = [...currentLevelCategories];
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
@@ -131,7 +137,7 @@ export function CategoryView({ platformId }: CategoryViewProps) {
     });
 
     return result;
-  }, [categories, searchQuery, sortBy]);
+  }, [currentLevelCategories, searchQuery, sortBy]);
 
   // Filter links by search query
   const filteredLinks = useMemo(() => {

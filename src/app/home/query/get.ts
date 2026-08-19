@@ -1,10 +1,11 @@
 import {
+  getAllCategoriesAction,
   getCategoriesAction,
   getLinksAction,
   getPlatformAction,
   getUserPreferencesAction,
 } from "@/app/home/lib/action";
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, queryOptions, useQuery } from "@tanstack/react-query";
 
 // ─── Platforms ───────────────────────────────────────────────
 
@@ -16,6 +17,7 @@ export function getPlatformQuery() {
       if (!res.success) throw new Error(res.message);
       return res.data;
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -24,6 +26,25 @@ export function useGetPlatformQuery() {
 }
 
 export type Platform = NonNullable<ReturnType<typeof useGetPlatformQuery>["data"]>[number];
+
+// ─── All Categories for Platform (Single Tree Query) ────────
+
+export function getAllCategoriesQuery(platformId: string) {
+  return queryOptions({
+    queryKey: ["get-all-categories", platformId],
+    queryFn: async () => {
+      const res = await getAllCategoriesAction(platformId);
+      if (!res.success) throw new Error(res.message);
+      return res.data;
+    },
+    enabled: !!platformId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useGetAllCategoriesQuery(platformId: string) {
+  return useQuery(getAllCategoriesQuery(platformId));
+}
 
 // ─── Categories ──────────────────────────────────────────────
 
@@ -36,6 +57,7 @@ export function getCategoriesQuery(platformId: string, parentId?: string | null)
       return res.data;
     },
     enabled: !!platformId,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -43,7 +65,7 @@ export function useGetCategoriesQuery(platformId: string, parentId?: string | nu
   return useQuery(getCategoriesQuery(platformId, parentId));
 }
 
-export type Category = NonNullable<ReturnType<typeof useGetCategoriesQuery>["data"]>[number];
+export type Category = NonNullable<ReturnType<typeof useGetAllCategoriesQuery>["data"]>[number];
 
 // ─── Links ───────────────────────────────────────────────────
 
@@ -56,6 +78,8 @@ export function getLinksQuery(params: { platformId: string; categoryId?: string 
       return res.data;
     },
     enabled: !!params.platformId,
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -75,6 +99,7 @@ export function getUserPreferencesQuery() {
       if (!res.success) throw new Error(res.message);
       return res.data;
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -83,3 +108,4 @@ export function useGetUserPreferencesQuery() {
 }
 
 export type UserPreferences = NonNullable<ReturnType<typeof useGetUserPreferencesQuery>["data"]>;
+

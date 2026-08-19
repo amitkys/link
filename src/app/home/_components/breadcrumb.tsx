@@ -1,6 +1,6 @@
 "use client";
 
-import { useGetCategoriesQuery, useGetPlatformQuery } from "@/app/home/query/get";
+import { useGetAllCategoriesQuery, useGetPlatformQuery } from "@/app/home/query/get";
 import { IconChevronRight, IconHome } from "@tabler/icons-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
@@ -12,7 +12,7 @@ interface BreadcrumbSegment {
 
 /**
  * Renders a clickable breadcrumb trail based on current URL search params.
- * Resolves names from TanStack Query cache for instant display (no extra fetches).
+ * Resolves full multi-level parent category trails instantly from preloaded platform categories.
  */
 export function Breadcrumb() {
   const searchParams = useSearchParams();
@@ -21,18 +21,11 @@ export function Breadcrumb() {
   const platformId = searchParams.get("platform");
   const categoryId = searchParams.get("category");
 
-  // Fetch platform data from cache (already loaded by PlatformView)
+  // Fetch platform data from cache
   const { data: platforms } = useGetPlatformQuery();
 
-  // Fetch categories if we're inside a platform (used to resolve category name)
-  const { data: categories } = useGetCategoriesQuery(platformId ?? "", categoryId ? undefined : undefined);
-
-  // Also try fetching the parent-level categories if we have a categoryId
-  // to find the category name in the data
-  const { data: parentCategories } = useGetCategoriesQuery(
-    platformId ?? "",
-    undefined
-  );
+  // Fetch all categories for the platform (already loaded by CategoryView)
+  const { data: categories } = useGetAllCategoriesQuery(platformId ?? "");
 
   const segments = useMemo(() => {
     const result: BreadcrumbSegment[] = [
@@ -47,18 +40,30 @@ export function Breadcrumb() {
       });
     }
 
-    if (categoryId) {
-      // Try to find the category name from loaded categories
-      const allCategories = [...(categories ?? []), ...(parentCategories ?? [])];
-      const category = allCategories.find((c) => c.id === categoryId);
-      result.push({
-        label: category?.name ?? "...",
-        href: `/home?platform=${platformId}&category=${categoryId}`,
-      });
+    if (categoryId && categories) {
+      // Trace parent category trail from target category up to top-level
+      const categoryTrail: Array<{ id: string; name: string }> = [];
+      let currentId: string | null | undefined = categoryId;
+      const visited = new Set<string>();
+
+      while (currentId && !visited.has(currentId)) {
+        visited.add(currentId);
+        const cat = categories.find((c) => c.id === currentId);
+        if (!cat) break;
+        categoryTrail.unshift({ id: cat.id, name: cat.name });
+        currentId = cat.parentId;
+      }
+
+      for (const cat of categoryTrail) {
+        result.push({
+          label: cat.name,
+          href: `/home?platform=${platformId}&category=${cat.id}`,
+        });
+      }
     }
 
     return result;
-  }, [platformId, categoryId, platforms, categories, parentCategories]);
+  }, [platformId, categoryId, platforms, categories]);
 
   const handleNavigate = (href: string) => {
     router.push(href, { scroll: false });
@@ -96,3 +101,4 @@ export function Breadcrumb() {
     </nav>
   );
 }
+

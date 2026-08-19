@@ -13,8 +13,68 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 
 /**
+ * Non-blocking background flush for platform visits stored in Redis.
+ */
+async function flushPendingPlatformVisits(userId: string) {
+  const redisKey = `user:${userId}:pending_platform_visits`;
+  const pendingVisits = await redis.hgetall<Record<string, number>>(redisKey);
+  if (!pendingVisits || Object.keys(pendingVisits).length === 0) return;
+
+  const entries = Object.entries(pendingVisits).filter(([, count]) => Number(count) > 0);
+  if (entries.length === 0) return;
+
+  await Promise.all(
+    entries.map(([platformId, count]) =>
+      db
+        .update(platformTable)
+        .set({
+          visitedTimes: sql`${platformTable.visitedTimes} + ${Number(count) || 0}`,
+          lastVisitedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(platformTable.id, platformId),
+            eq(platformTable.userId, userId)
+          )
+        )
+    )
+  );
+  await redis.del(redisKey);
+}
+
+/**
+ * Non-blocking background flush for category visits stored in Redis.
+ */
+async function flushPendingCategoryVisits(userId: string) {
+  const redisKey = `user:${userId}:pending_category_visits`;
+  const pendingVisits = await redis.hgetall<Record<string, number>>(redisKey);
+  if (!pendingVisits || Object.keys(pendingVisits).length === 0) return;
+
+  const entries = Object.entries(pendingVisits).filter(([, count]) => Number(count) > 0);
+  if (entries.length === 0) return;
+
+  await Promise.all(
+    entries.map(([categoryId, count]) =>
+      db
+        .update(categoryTable)
+        .set({
+          visitedTimes: sql`${categoryTable.visitedTimes} + ${Number(count) || 0}`,
+          lastVisitedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(categoryTable.id, categoryId),
+            eq(categoryTable.userId, userId)
+          )
+        )
+    )
+  );
+  await redis.del(redisKey);
+}
+
+/**
  * Fetches platforms for authenticated user.
- * Implements Option A1 Lazy Sync: Flushes pending Redis visit counts to Postgres before querying.
+ * Non-blocking Redis visit sync runs in background.
  */
 export async function getPlatformAction() {
   try {
@@ -22,36 +82,13 @@ export async function getPlatformAction() {
     if (!session) return { success: false, message: "User not authenticated" };
 
     const userId = session.user.id;
-    const redisKey = `user:${userId}:pending_platform_visits`;
 
-    // 1. Lazy Sync from Redis to DB
-    try {
-      const pendingVisits = await redis.hgetall<Record<string, number>>(redisKey);
-      if (pendingVisits && Object.keys(pendingVisits).length > 0) {
-        for (const [platformId, count] of Object.entries(pendingVisits)) {
-          const incrementBy = Number(count) || 0;
-          if (incrementBy > 0) {
-            await db
-              .update(platformTable)
-              .set({
-                visitedTimes: sql`${platformTable.visitedTimes} + ${incrementBy}`,
-                lastVisitedAt: new Date(),
-              })
-              .where(
-                and(
-                  eq(platformTable.id, platformId),
-                  eq(platformTable.userId, userId)
-                )
-              );
-          }
-        }
-        await redis.del(redisKey);
-      }
-    } catch (redisError) {
-      console.error("getPlatformAction Redis sync error", redisError);
-    }
+    // Trigger non-blocking Redis sync in background
+    flushPendingPlatformVisits(userId).catch((err) =>
+      console.error("flushPendingPlatformVisits error", err)
+    );
 
-    // 2. Query platforms from PostgreSQL
+    // Query platforms immediately from PostgreSQL
     const platforms = await db
       .select()
       .from(platformTable)
@@ -102,10 +139,38 @@ export async function recordCategoryVisitAction(categoryId: string) {
 }
 
 /**
- * Fetches categories for a platform, scoped to the authenticated user.
- * If parentId is provided, fetches subcategories of that parent.
- * If parentId is null/undefined, fetches top-level categories (parentId IS NULL).
- * Implements Option A1 Lazy Sync for category visit counts.
+ * Fetches ALL categories for a given platform in one single fast query.
+ */
+export async function getAllCategoriesAction(platformId: string) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return { success: false, message: "User not authenticated" };
+
+    const userId = session.user.id;
+
+    flushPendingCategoryVisits(userId).catch((err) =>
+      console.error("flushPendingCategoryVisits error", err)
+    );
+
+    const categories = await db
+      .select()
+      .from(categoryTable)
+      .where(
+        and(
+          eq(categoryTable.userId, userId),
+          eq(categoryTable.platformId, platformId)
+        )
+      );
+
+    return { success: true, data: categories };
+  } catch (error) {
+    console.error("getAllCategoriesAction error", error);
+    return { success: false, message: "Failed to fetch categories" };
+  }
+}
+
+/**
+ * Fetches categories for a platform level, scoped to the authenticated user.
  */
 export async function getCategoriesAction(platformId: string, parentId?: string | null) {
   try {
@@ -113,34 +178,10 @@ export async function getCategoriesAction(platformId: string, parentId?: string 
     if (!session) return { success: false, message: "User not authenticated" };
 
     const userId = session.user.id;
-    const redisKey = `user:${userId}:pending_category_visits`;
 
-    // 1. Lazy Sync from Redis to DB
-    try {
-      const pendingVisits = await redis.hgetall<Record<string, number>>(redisKey);
-      if (pendingVisits && Object.keys(pendingVisits).length > 0) {
-        for (const [categoryId, count] of Object.entries(pendingVisits)) {
-          const incrementBy = Number(count) || 0;
-          if (incrementBy > 0) {
-            await db
-              .update(categoryTable)
-              .set({
-                visitedTimes: sql`${categoryTable.visitedTimes} + ${incrementBy}`,
-                lastVisitedAt: new Date(),
-              })
-              .where(
-                and(
-                  eq(categoryTable.id, categoryId),
-                  eq(categoryTable.userId, userId)
-                )
-              );
-          }
-        }
-        await redis.del(redisKey);
-      }
-    } catch (redisError) {
-      console.error("getCategoriesAction Redis sync error", redisError);
-    }
+    flushPendingCategoryVisits(userId).catch((err) =>
+      console.error("flushPendingCategoryVisits error", err)
+    );
 
     const conditions = [
       eq(categoryTable.userId, userId),
