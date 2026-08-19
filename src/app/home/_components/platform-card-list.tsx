@@ -6,6 +6,7 @@ import { useRecordPlatformVisitMutation } from "@/app/home/query/update";
 import { IconCalendar, IconEye, IconFolder } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 interface PlatformCardListProps {
   platform: Platform;
@@ -15,6 +16,7 @@ export function PlatformCardList({ platform }: PlatformCardListProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const recordVisitMutation = useRecordPlatformVisitMutation();
+  const [imgError, setImgError] = useState(false);
 
   const formattedDate = new Date(platform.createdAt).toLocaleDateString("en-US", {
     month: "short",
@@ -38,10 +40,15 @@ export function PlatformCardList({ platform }: PlatformCardListProps) {
       className="flex items-center justify-between p-4 hover:bg-accent/30 transition-colors group cursor-pointer"
     >
       <div className="flex items-center gap-4 min-w-0">
-        <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-          {platform.icon ? (
+        <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 overflow-hidden">
+          {platform.icon && !imgError ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={platform.icon} alt={platform.name} className="w-4 h-4 object-contain" />
+            <img
+              src={platform.icon}
+              alt={platform.name}
+              onError={() => setImgError(true)}
+              className="w-4 h-4 object-contain"
+            />
           ) : (
             <IconFolder className="w-4 h-4" />
           )}
@@ -50,7 +57,6 @@ export function PlatformCardList({ platform }: PlatformCardListProps) {
           <h3 className="font-medium text-sm text-foreground group-hover:text-primary transition-colors truncate">
             {platform.name}
           </h3>
-          <p className="text-xs text-muted-foreground truncate font-mono">ID: {platform.id}</p>
         </div>
       </div>
 

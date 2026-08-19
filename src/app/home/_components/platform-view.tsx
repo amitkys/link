@@ -111,9 +111,9 @@ export default function PlatformView() {
         <div className="flex flex-col items-center justify-center p-12 text-center border border-destructive/20 bg-destructive/5 rounded-2xl space-y-4">
           <IconAlertCircle className="w-12 h-12 text-destructive" />
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Failed to load platforms</h3>
+            <h3 className="text-lg font-semibold text-foreground">Failed to load hubs</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              {error instanceof Error ? error.message : "An error occurred while fetching platforms."}
+              {error instanceof Error ? error.message : "An error occurred while fetching hubs."}
             </p>
           </div>
           <Button onClick={() => refetch()} variant="outline" size="sm" className="gap-2">
@@ -128,12 +128,12 @@ export default function PlatformView() {
           </div>
           <div className="max-w-md space-y-1">
             <h3 className="text-lg font-semibold text-foreground">
-              {searchQuery ? "No matching platforms" : "No platforms yet"}
+              {searchQuery ? "No matching hubs" : "No hubs yet"}
             </h3>
             <p className="text-sm text-muted-foreground">
               {searchQuery
-                ? `No platforms match "${searchQuery}". Try clearing your search query.`
-                : "Create your first platform to start categorizing and organizing your links."}
+                ? `No hubs match "${searchQuery}". Try clearing your search query.`
+                : "Create your first hub to start categorizing and organizing your links."}
             </p>
           </div>
           {searchQuery ? (
@@ -143,7 +143,7 @@ export default function PlatformView() {
           ) : (
             <Button size="sm" className="gap-2">
               <IconPlus className="w-4 h-4" />
-              Add Platform
+              Add Hub
             </Button>
           )}
         </div>
@@ -151,7 +151,7 @@ export default function PlatformView() {
         <div className="space-y-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
             <span>
-              Showing {filteredAndSortedPlatforms.length} platform
+              Showing {filteredAndSortedPlatforms.length} hub
               {filteredAndSortedPlatforms.length === 1 ? "" : "s"}
             </span>
           </div>

@@ -208,7 +208,7 @@ export function CategoryView({ platformId }: CategoryViewProps) {
             <p className="text-sm text-muted-foreground">
               {searchQuery
                 ? `No categories or links match "${searchQuery}".`
-                : `This ${categoryId ? "category" : "platform"} doesn't have any subcategories or links yet.`}
+                : `This ${categoryId ? "category" : "hub"} doesn't have any subcategories or links yet.`}
             </p>
           </div>
           {searchQuery ? (
@@ -341,9 +341,6 @@ function CategoryCardGrid({
           <h3 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors line-clamp-1">
             {category.name}
           </h3>
-          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1 font-mono">
-            ID: {category.id}
-          </p>
         </div>
       </div>
 
@@ -389,7 +386,6 @@ function CategoryCardList({
           <h3 className="font-medium text-sm text-foreground group-hover:text-primary transition-colors truncate">
             {category.name}
           </h3>
-          <p className="text-xs text-muted-foreground truncate font-mono">ID: {category.id}</p>
         </div>
       </div>
 

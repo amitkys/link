@@ -26,9 +26,9 @@ interface PlatformControlsProps {
 }
 
 export function PlatformControls({
-  title = "Platforms",
-  subtitle = "Manage and view your saved platforms and link collections.",
-  searchPlaceholder = "Search platforms...",
+  title = "Hubs",
+  subtitle = "Manage and view your saved hubs and link collections.",
+  searchPlaceholder = "Search hubs...",
   searchQuery,
   onSearchChange,
   sortBy,
@@ -43,9 +43,6 @@ export function PlatformControls({
           <IconFolder className="w-7 h-7 text-primary" />
           {title}
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {subtitle}
-        </p>
       </div>
 
       {/* Controls: Search, Sort, View Toggle */}
@@ -82,11 +79,10 @@ export function PlatformControls({
           <button
             type="button"
             onClick={() => onViewModeChange("grid")}
-            className={`p-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1 cursor-pointer ${
-              viewMode === "grid"
+            className={`p-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1 cursor-pointer ${viewMode === "grid"
                 ? "bg-background text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
             title="Grid View"
           >
             <IconLayoutGrid className="w-4 h-4" />
@@ -95,11 +91,10 @@ export function PlatformControls({
           <button
             type="button"
             onClick={() => onViewModeChange("list")}
-            className={`p-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1 cursor-pointer ${
-              viewMode === "list"
+            className={`p-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1 cursor-pointer ${viewMode === "list"
                 ? "bg-background text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
             title="List View"
           >
             <IconList className="w-4 h-4" />
@@ -108,11 +103,10 @@ export function PlatformControls({
           <button
             type="button"
             onClick={() => onViewModeChange("compact")}
-            className={`p-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1 cursor-pointer ${
-              viewMode === "compact"
+            className={`p-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1 cursor-pointer ${viewMode === "compact"
                 ? "bg-background text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
             title="Compact View"
           >
             <IconLayoutList className="w-4 h-4" />

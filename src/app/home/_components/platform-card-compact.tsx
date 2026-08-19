@@ -6,6 +6,7 @@ import { useRecordPlatformVisitMutation } from "@/app/home/query/update";
 import { IconFolder } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 interface PlatformCardCompactProps {
   platform: Platform;
@@ -15,6 +16,7 @@ export function PlatformCardCompact({ platform }: PlatformCardCompactProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const recordVisitMutation = useRecordPlatformVisitMutation();
+  const [imgError, setImgError] = useState(false);
 
   const handleClick = () => {
     recordVisitMutation.mutate(platform.id);
@@ -32,10 +34,15 @@ export function PlatformCardCompact({ platform }: PlatformCardCompactProps) {
       className="flex items-center justify-between p-3 rounded-lg border border-border bg-card hover:bg-accent/40 hover:border-primary/40 transition-all group cursor-pointer"
     >
       <div className="flex items-center gap-2.5 min-w-0">
-        <div className="w-7 h-7 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-          {platform.icon ? (
+        <div className="w-7 h-7 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 overflow-hidden">
+          {platform.icon && !imgError ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={platform.icon} alt={platform.name} className="w-3.5 h-3.5 object-contain" />
+            <img
+              src={platform.icon}
+              alt={platform.name}
+              onError={() => setImgError(true)}
+              className="w-3.5 h-3.5 object-contain"
+            />
           ) : (
             <IconFolder className="w-3.5 h-3.5" />
           )}

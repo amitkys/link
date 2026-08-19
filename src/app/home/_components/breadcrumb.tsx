@@ -29,7 +29,7 @@ export function Breadcrumb() {
 
   const segments = useMemo(() => {
     const result: BreadcrumbSegment[] = [
-      { label: "Platforms", href: "/home" },
+      { label: "Hubs", href: "/home" },
     ];
 
     if (platformId) {

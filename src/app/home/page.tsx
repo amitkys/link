@@ -5,8 +5,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Platforms",
-  description: "View and manage your saved platforms on Link.",
+  title: "Hubs",
+  description: "View and manage your saved hubs on Link.",
 };
 
 export default async function Page() {
