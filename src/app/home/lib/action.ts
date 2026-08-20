@@ -139,6 +139,48 @@ export async function recordCategoryVisitAction(categoryId: string) {
 }
 
 /**
+ * Fetches ALL categories AND ALL links for a given platform in one single fast parallel query.
+ */
+export async function getPlatformDataAction(platformId: string) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return { success: false, message: "User not authenticated" };
+
+    const userId = session.user.id;
+
+    flushPendingCategoryVisits(userId).catch((err) =>
+      console.error("flushPendingCategoryVisits error", err)
+    );
+
+    const [categories, links] = await Promise.all([
+      db
+        .select()
+        .from(categoryTable)
+        .where(
+          and(
+            eq(categoryTable.userId, userId),
+            eq(categoryTable.platformId, platformId)
+          )
+        ),
+      db
+        .select()
+        .from(linkTable)
+        .where(
+          and(
+            eq(linkTable.userId, userId),
+            eq(linkTable.platformId, platformId)
+          )
+        ),
+    ]);
+
+    return { success: true, data: { categories, links } };
+  } catch (error) {
+    console.error("getPlatformDataAction error", error);
+    return { success: false, message: "Failed to fetch platform data" };
+  }
+}
+
+/**
  * Fetches ALL categories for a given platform in one single fast query.
  */
 export async function getAllCategoriesAction(platformId: string) {

@@ -1,11 +1,7 @@
 "use client";
 
 import type { Category } from "@/app/home/query/get";
-import {
-  getLinksQuery,
-  useGetAllCategoriesQuery,
-  useGetLinksQuery,
-} from "@/app/home/query/get";
+import { useGetPlatformDataQuery } from "@/app/home/query/get";
 import {
   useRecordCategoryVisitMutation,
   useUpdateUserPreferencesMutation,
@@ -56,14 +52,17 @@ export function CategoryView({ platformId }: CategoryViewProps) {
 
   const categoryId = searchParams.get("category");
 
-  // Fetch all categories for the platform once for instant subdirectory filtering
+  // Fetch all categories and links for the platform in one fast parallel query
   const {
-    data: allCategories,
-    isLoading: categoriesLoading,
-    isError: categoriesError,
-    error: catError,
-    refetch: refetchCategories,
-  } = useGetAllCategoriesQuery(platformId);
+    data: platformData,
+    isLoading: isPlatformDataLoading,
+    isError,
+    error,
+    refetch,
+  } = useGetPlatformDataQuery(platformId);
+
+  const allCategories = platformData?.categories;
+  const allLinks = platformData?.links;
 
   // Filter categories at current level (top-level if categoryId is null, subcategories if categoryId is set)
   const currentLevelCategories = useMemo(() => {
@@ -73,18 +72,16 @@ export function CategoryView({ platformId }: CategoryViewProps) {
     );
   }, [allCategories, categoryId]);
 
-  // Fetch links at current level
-  const {
-    data: links,
-    isLoading: linksLoading,
-    isError: linksError,
-    error: lnkError,
-    refetch: refetchLinks,
-  } = useGetLinksQuery({ platformId, categoryId });
+  // Filter links at current level (top-level if categoryId is null, subcategory links if categoryId is set)
+  const currentLevelLinks = useMemo(() => {
+    if (!allLinks) return [];
+    return allLinks.filter((l) =>
+      categoryId ? l.categoryId === categoryId : !l.categoryId
+    );
+  }, [allLinks, categoryId]);
 
-  const isLoading = (categoriesLoading && !allCategories) || (linksLoading && !links);
-  const isError = categoriesError || linksError;
-  const errorMessage = catError?.message || lnkError?.message || "Failed to load data";
+  const isLoading = isPlatformDataLoading && !platformData;
+  const errorMessage = error?.message || "Failed to load data";
 
   const handleViewModeChange = (mode: ViewMode) => {
     setViewMode(mode);
@@ -141,13 +138,13 @@ export function CategoryView({ platformId }: CategoryViewProps) {
 
   // Filter links by search query
   const filteredLinks = useMemo(() => {
-    if (!links) return [];
-    if (!searchQuery.trim()) return links;
+    if (!currentLevelLinks) return [];
+    if (!searchQuery.trim()) return currentLevelLinks;
     const q = searchQuery.toLowerCase().trim();
-    return links.filter(
+    return currentLevelLinks.filter(
       (l) => (l.title && l.title.toLowerCase().includes(q)) || l.url.toLowerCase().includes(q)
     );
-  }, [links, searchQuery]);
+  }, [currentLevelLinks, searchQuery]);
 
   if (isLoading) {
     return <CategorySkeleton viewMode={viewMode} />;
@@ -163,8 +160,7 @@ export function CategoryView({ platformId }: CategoryViewProps) {
         </div>
         <Button
           onClick={() => {
-            refetchCategories();
-            refetchLinks();
+            refetch();
           }}
           variant="outline"
           size="sm"

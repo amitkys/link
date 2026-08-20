@@ -1,11 +1,7 @@
 "use client";
 
 import type { Platform } from "@/app/home/query/get";
-import {
-  getAllCategoriesQuery,
-  getLinksQuery,
-  useGetPlatformQuery,
-} from "@/app/home/query/get";
+import { getPlatformDataQuery } from "@/app/home/query/get";
 import { useRecordPlatformVisitMutation } from "@/app/home/query/update";
 import { navigateClient } from "@/app/home/lib/navigate";
 import { IconCalendar, IconEye, IconFolder } from "@tabler/icons-react";
@@ -33,8 +29,7 @@ export function PlatformCardGrid({ platform }: PlatformCardGridProps) {
   };
 
   const handleMouseEnter = () => {
-    queryClient.prefetchQuery(getAllCategoriesQuery(platform.id));
-    queryClient.prefetchQuery(getLinksQuery({ platformId: platform.id, categoryId: null }));
+    queryClient.prefetchQuery(getPlatformDataQuery(platform.id));
   };
 
   return (

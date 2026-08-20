@@ -3,6 +3,7 @@ import {
   getCategoriesAction,
   getLinksAction,
   getPlatformAction,
+  getPlatformDataAction,
   getUserPreferencesAction,
 } from "@/app/home/lib/action";
 import { queryOptions, useQuery } from "@tanstack/react-query";
@@ -26,6 +27,25 @@ export function useGetPlatformQuery() {
 }
 
 export type Platform = NonNullable<ReturnType<typeof useGetPlatformQuery>["data"]>[number];
+
+// ─── Platform Data (Full Category Tree + All Links in 1 Query) ───
+
+export function getPlatformDataQuery(platformId: string) {
+  return queryOptions({
+    queryKey: ["get-platform-data", platformId],
+    queryFn: async () => {
+      const res = await getPlatformDataAction(platformId);
+      if (!res.success) throw new Error(res.message);
+      return res.data;
+    },
+    enabled: !!platformId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useGetPlatformDataQuery(platformId: string) {
+  return useQuery(getPlatformDataQuery(platformId));
+}
 
 // ─── All Categories for Platform (Single Tree Query) ────────
 

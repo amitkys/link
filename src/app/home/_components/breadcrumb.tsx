@@ -1,7 +1,7 @@
 "use client";
 
 import { navigateClient } from "@/app/home/lib/navigate";
-import { useGetAllCategoriesQuery, useGetPlatformQuery } from "@/app/home/query/get";
+import { useGetPlatformDataQuery, useGetPlatformQuery } from "@/app/home/query/get";
 import { IconChevronRight, IconHome } from "@tabler/icons-react";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
@@ -24,8 +24,9 @@ export function Breadcrumb() {
   // Fetch platform data from cache
   const { data: platforms } = useGetPlatformQuery();
 
-  // Fetch all categories for the platform (already loaded by CategoryView)
-  const { data: categories } = useGetAllCategoriesQuery(platformId ?? "");
+  // Fetch all categories for the platform (already loaded by CategoryView via getPlatformDataQuery)
+  const { data: platformData } = useGetPlatformDataQuery(platformId ?? "");
+  const categories = platformData?.categories;
 
   const segments = useMemo(() => {
     const result: BreadcrumbSegment[] = [

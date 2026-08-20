@@ -25,6 +25,9 @@ export function useCreateCategoryMutation() {
     onSuccess: (res, variables) => {
       if (!res.success) return;
       queryClient.invalidateQueries({
+        queryKey: ["get-platform-data", variables.platformId],
+      });
+      queryClient.invalidateQueries({
         queryKey: ["get-all-categories", variables.platformId],
       });
       queryClient.invalidateQueries({
@@ -41,6 +44,9 @@ export function useCreateLinkMutation() {
     mutationFn: createLinkAction,
     onSuccess: (res, variables) => {
       if (!res.success) return;
+      queryClient.invalidateQueries({
+        queryKey: ["get-platform-data", variables.platformId],
+      });
       queryClient.invalidateQueries({
         queryKey: ["get-links", variables.platformId],
       });
