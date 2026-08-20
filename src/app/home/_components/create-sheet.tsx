@@ -59,21 +59,35 @@ export function CreateSheet() {
     createPlatformMutation.isPending || createCategoryMutation.isPending;
   const isLinkPending = createLinkMutation.isPending;
 
-  // Shortcut key handler: Ctrl + Shift + N for Directory / Platform
+  // Shortcut key handler: Ctrl + Shift + N for Directory / Platform (Overriding Chrome default via capture phase)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
         (e.ctrlKey || e.metaKey) &&
         e.shiftKey &&
-        e.key.toLowerCase() === "n"
+        (e.key === "N" || e.key === "n" || e.code === "KeyN")
       ) {
         e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        const target = e.target as HTMLElement | null;
+        if (
+          target &&
+          (target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.isContentEditable)
+        ) {
+          return;
+        }
+
         setOpenFolder((prev) => !prev);
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    // { capture: true } allows catching the event BEFORE the browser native handling
+    window.addEventListener("keydown", handleKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
   }, []);
 
   // Shortcut key handler: Ctrl + Shift + L for Link (only when inside a platform)
@@ -84,15 +98,28 @@ export function CreateSheet() {
       if (
         (e.ctrlKey || e.metaKey) &&
         e.shiftKey &&
-        e.key.toLowerCase() === "l"
+        (e.key === "L" || e.key === "l" || e.code === "KeyL")
       ) {
         e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        const target = e.target as HTMLElement | null;
+        if (
+          target &&
+          (target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.isContentEditable)
+        ) {
+          return;
+        }
+
         setOpenLink((prev) => !prev);
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
   }, [platformId]);
 
   const handleFolderSubmit = async (e: React.FormEvent) => {
