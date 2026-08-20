@@ -6,9 +6,9 @@ import {
   useGetPlatformQuery,
 } from "@/app/home/query/get";
 import { useRecordPlatformVisitMutation } from "@/app/home/query/update";
+import { navigateClient } from "@/app/home/lib/navigate";
 import { IconCalendar, IconEye, IconFolder } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 interface PlatformCardGridProps {
@@ -16,7 +16,6 @@ interface PlatformCardGridProps {
 }
 
 export function PlatformCardGrid({ platform }: PlatformCardGridProps) {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const recordVisitMutation = useRecordPlatformVisitMutation();
   const [imgError, setImgError] = useState(false);
@@ -29,7 +28,7 @@ export function PlatformCardGrid({ platform }: PlatformCardGridProps) {
 
   const handleClick = () => {
     recordVisitMutation.mutate(platform.id);
-    router.push(`/home?platform=${platform.id}`, { scroll: false });
+    navigateClient(`/home?platform=${platform.id}`);
   };
 
   const handleMouseEnter = () => {

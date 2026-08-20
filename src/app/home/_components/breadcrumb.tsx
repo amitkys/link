@@ -1,8 +1,9 @@
 "use client";
 
+import { navigateClient } from "@/app/home/lib/navigate";
 import { useGetAllCategoriesQuery, useGetPlatformQuery } from "@/app/home/query/get";
 import { IconChevronRight, IconHome } from "@tabler/icons-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 
 interface BreadcrumbSegment {
@@ -16,7 +17,6 @@ interface BreadcrumbSegment {
  */
 export function Breadcrumb() {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   const platformId = searchParams.get("platform");
   const categoryId = searchParams.get("category");
@@ -66,7 +66,7 @@ export function Breadcrumb() {
   }, [platformId, categoryId, platforms, categories]);
 
   const handleNavigate = (href: string) => {
-    router.push(href, { scroll: false });
+    navigateClient(href);
   };
 
   return (

@@ -29,8 +29,9 @@ import {
   IconPlus,
   IconRefresh,
 } from "@tabler/icons-react";
+import { navigateClient } from "@/app/home/lib/navigate";
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { PlatformControls } from "./platform-controls";
 
@@ -43,7 +44,6 @@ interface CategoryViewProps {
  */
 export function CategoryView({ platformId }: CategoryViewProps) {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const queryClient = useQueryClient();
 
   const viewMode = useViewMode();
@@ -100,7 +100,7 @@ export function CategoryView({ platformId }: CategoryViewProps) {
     recordCategoryVisitMutation.mutate(category.id);
     const params = new URLSearchParams(searchParams.toString());
     params.set("category", category.id);
-    router.push(`/home?${params.toString()}`, { scroll: false });
+    navigateClient(`/home?${params.toString()}`);
   };
 
   const handleCategoryHover = (category: Category) => {

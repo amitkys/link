@@ -2,10 +2,10 @@
 
 import type { Platform } from "@/app/home/query/get";
 import { getAllCategoriesQuery } from "@/app/home/query/get";
+import { navigateClient } from "@/app/home/lib/navigate";
 import { useRecordPlatformVisitMutation } from "@/app/home/query/update";
 import { IconFolder } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 interface PlatformCardCompactProps {
@@ -13,14 +13,13 @@ interface PlatformCardCompactProps {
 }
 
 export function PlatformCardCompact({ platform }: PlatformCardCompactProps) {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const recordVisitMutation = useRecordPlatformVisitMutation();
   const [imgError, setImgError] = useState(false);
 
   const handleClick = () => {
     recordVisitMutation.mutate(platform.id);
-    router.push(`/home?platform=${platform.id}`, { scroll: false });
+    navigateClient(`/home?platform=${platform.id}`);
   };
 
   const handleMouseEnter = () => {
