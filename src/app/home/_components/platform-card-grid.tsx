@@ -78,6 +78,3 @@ export function PlatformCardGrid({ platform }: PlatformCardGridProps) {
     </div>
   );
 }
-
-// Re-export useGetPlatformQuery for hover prefetch usage
-export { useGetPlatformQuery };

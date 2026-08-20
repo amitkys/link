@@ -100,8 +100,8 @@ export function CategoryView({ platformId }: CategoryViewProps) {
     navigateClient(`/home?${params.toString()}`);
   };
 
-  const handleCategoryHover = (category: Category) => {
-    queryClient.prefetchQuery(getLinksQuery({ platformId, categoryId: category.id }));
+  const handleCategoryHover = (_category: Category) => {
+    // All categories and links for this platform are already preloaded in platformData
   };
 
   // Filter and sort categories
