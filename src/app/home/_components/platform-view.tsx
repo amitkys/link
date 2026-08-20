@@ -133,7 +133,7 @@ export default function PlatformView() {
             <p className="text-sm text-muted-foreground">
               {searchQuery
                 ? `No hubs match "${searchQuery}". Try clearing your search query.`
-                : "Create your first hub to start categorizing and organizing your links."}
+                : null}
             </p>
           </div>
           {searchQuery ? (
@@ -141,10 +141,7 @@ export default function PlatformView() {
               Clear Search
             </Button>
           ) : (
-            <Button size="sm" className="gap-2">
-              <IconPlus className="w-4 h-4" />
-              Add Hub
-            </Button>
+            null
           )}
         </div>
       ) : (
