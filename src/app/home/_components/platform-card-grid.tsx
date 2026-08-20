@@ -3,6 +3,7 @@
 import type { Platform } from "@/app/home/query/get";
 import {
   getAllCategoriesQuery,
+  getLinksQuery,
   useGetPlatformQuery,
 } from "@/app/home/query/get";
 import { useRecordPlatformVisitMutation } from "@/app/home/query/update";
@@ -33,6 +34,7 @@ export function PlatformCardGrid({ platform }: PlatformCardGridProps) {
 
   const handleMouseEnter = () => {
     queryClient.prefetchQuery(getAllCategoriesQuery(platform.id));
+    queryClient.prefetchQuery(getLinksQuery({ platformId: platform.id, categoryId: null }));
   };
 
   return (

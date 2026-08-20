@@ -5,7 +5,7 @@ import {
   getPlatformAction,
   getUserPreferencesAction,
 } from "@/app/home/lib/action";
-import { keepPreviousData, queryOptions, useQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 
 // ─── Platforms ───────────────────────────────────────────────
 
@@ -78,7 +78,6 @@ export function getLinksQuery(params: { platformId: string; categoryId?: string 
       return res.data;
     },
     enabled: !!params.platformId,
-    placeholderData: keepPreviousData,
     staleTime: 5 * 60 * 1000,
   });
 }

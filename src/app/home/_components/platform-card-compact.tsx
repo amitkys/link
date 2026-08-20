@@ -1,7 +1,7 @@
 "use client";
 
 import type { Platform } from "@/app/home/query/get";
-import { getAllCategoriesQuery } from "@/app/home/query/get";
+import { getAllCategoriesQuery, getLinksQuery } from "@/app/home/query/get";
 import { navigateClient } from "@/app/home/lib/navigate";
 import { useRecordPlatformVisitMutation } from "@/app/home/query/update";
 import { IconFolder } from "@tabler/icons-react";
@@ -24,6 +24,7 @@ export function PlatformCardCompact({ platform }: PlatformCardCompactProps) {
 
   const handleMouseEnter = () => {
     queryClient.prefetchQuery(getAllCategoriesQuery(platform.id));
+    queryClient.prefetchQuery(getLinksQuery({ platformId: platform.id, categoryId: null }));
   };
 
   return (
