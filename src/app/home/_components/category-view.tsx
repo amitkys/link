@@ -450,7 +450,14 @@ function LinkCard({
     visitedTimes: number;
   };
 }) {
-  const displayTitle = link.title || new URL(link.url).hostname;
+  let displayTitle = link.title;
+  if (!displayTitle) {
+    try {
+      displayTitle = new URL(link.url).hostname;
+    } catch {
+      displayTitle = link.url;
+    }
+  }
 
   const handleClick = () => {
     window.open(link.url, "_blank", "noopener,noreferrer");
@@ -459,9 +466,9 @@ function LinkCard({
   return (
     <div
       onClick={handleClick}
-      className="group relative flex flex-col justify-between bg-card hover:bg-accent/40 border border-border hover:border-primary/40 rounded-xl p-5 transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer"
+      className="group relative flex flex-col justify-between bg-card hover:bg-accent/40 border border-border hover:border-primary/40 rounded-xl p-5 transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer min-w-0"
     >
-      <div className="space-y-3">
+      <div className="space-y-3 min-w-0">
         {link.thumbnail && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -471,20 +478,30 @@ function LinkCard({
           />
         )}
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <IconLink className="w-4 h-4 text-primary shrink-0" />
-          <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors line-clamp-1">
+          <h3
+            className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors truncate min-w-0"
+            title={displayTitle}
+          >
             {displayTitle}
           </h3>
         </div>
 
         {link.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2">{link.description}</p>
+          <p className="text-xs text-muted-foreground line-clamp-2 break-words">
+            {link.description}
+          </p>
         )}
       </div>
 
-      <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground">
-        <span className="truncate max-w-[70%] font-mono text-[11px]">{link.url}</span>
+      <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground gap-2 min-w-0">
+        <span
+          className="truncate font-mono text-[11px] text-muted-foreground/80 shrink min-w-0"
+          title={link.url}
+        >
+          {link.url}
+        </span>
         <IconExternalLink className="w-3.5 h-3.5 text-primary shrink-0" />
       </div>
     </div>

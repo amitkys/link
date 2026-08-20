@@ -306,3 +306,121 @@ export async function updateUserPreferencesAction(input: {
     return { success: false, message: "Failed to update user preferences" };
   }
 }
+
+/**
+ * Creates a new platform/hub for the authenticated user.
+ */
+export async function createPlatformAction(input: {
+  name: string;
+  icon?: string;
+}) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return { success: false, message: "User not authenticated" };
+
+    const userId = session.user.id;
+    const cleanName = input.name.trim();
+
+    if (!cleanName) {
+      return { success: false, message: "Platform name is required" };
+    }
+
+    const [platform] = await db
+      .insert(platformTable)
+      .values({
+        userId,
+        name: cleanName,
+        icon: input.icon?.trim() || null,
+      })
+      .returning();
+
+    return { success: true, data: platform };
+  } catch (error) {
+    console.error("createPlatformAction error", error);
+    return { success: false, message: "Failed to create platform" };
+  }
+}
+
+/**
+ * Creates a new directory or subdirectory under a platform for the authenticated user.
+ */
+export async function createCategoryAction(input: {
+  name: string;
+  platformId: string;
+  parentId?: string | null;
+}) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return { success: false, message: "User not authenticated" };
+
+    const userId = session.user.id;
+    const cleanName = input.name.trim();
+
+    if (!cleanName) {
+      return { success: false, message: "Category name is required" };
+    }
+
+    if (!input.platformId) {
+      return { success: false, message: "Platform ID is required" };
+    }
+
+    const [category] = await db
+      .insert(categoryTable)
+      .values({
+        userId,
+        name: cleanName,
+        platformId: input.platformId,
+        parentId: input.parentId || null,
+      })
+      .returning();
+
+    return { success: true, data: category };
+  } catch (error) {
+    console.error("createCategoryAction error", error);
+    return { success: false, message: "Failed to create category" };
+  }
+}
+
+/**
+ * Creates a new saved link under a platform (and optional category) for the authenticated user.
+ */
+export async function createLinkAction(input: {
+  platformId: string;
+  categoryId?: string | null;
+  url: string;
+  title?: string;
+  description?: string;
+}) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return { success: false, message: "User not authenticated" };
+
+    const userId = session.user.id;
+    const cleanUrl = input.url.trim();
+
+    if (!cleanUrl) {
+      return { success: false, message: "URL is required" };
+    }
+
+    if (!input.platformId) {
+      return { success: false, message: "Platform ID is required" };
+    }
+
+    const [newLink] = await db
+      .insert(linkTable)
+      .values({
+        userId,
+        platformId: input.platformId,
+        categoryId: input.categoryId || null,
+        url: cleanUrl,
+        title: input.title?.trim() || null,
+        description: input.description?.trim() || null,
+      })
+      .returning();
+
+    return { success: true, data: newLink };
+  } catch (error) {
+    console.error("createLinkAction error", error);
+    return { success: false, message: "Failed to create link" };
+  }
+}

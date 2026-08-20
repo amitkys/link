@@ -5,6 +5,7 @@ import { Suspense } from "react";
 
 import { Breadcrumb } from "./breadcrumb";
 import { CategoryView } from "./category-view";
+import { CreateSheet } from "./create-sheet";
 import PlatformView from "./platform-view";
 
 /**
@@ -30,6 +31,9 @@ function HomeExplorerContent() {
       ) : (
         <CategoryView platformId={platformId} />
       )}
+
+      {/* Context-aware Floating Creation Button & Sheet */}
+      <CreateSheet />
     </div>
   );
 }

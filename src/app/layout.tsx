@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { CustomeToast } from "@/components/toast-provider";
 import QueryProvider from "@/components/query-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const inter = Inter({ subsets: ['latin'], weight: ["500", "600", "700", "800", "900"], variable: '--font-sans' });
 
@@ -80,7 +81,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <main>
           <QueryProvider>
-            {children}
+            <TooltipProvider>
+              {children}
+            </TooltipProvider>
           </QueryProvider>
         </main>
         <CustomeToast />
