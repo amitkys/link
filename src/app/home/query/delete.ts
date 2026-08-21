@@ -1,43 +1,15 @@
 import {
-  recordCategoryVisitAction,
-  recordPlatformVisitAction,
-  updateCategoryAction,
-  updateLinkAction,
-  updatePlatformAction,
-  updateUserPreferencesAction,
+  deleteCategoryAction,
+  deleteLinkAction,
+  deletePlatformAction,
 } from "@/app/home/lib/action";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-export function useUpdateUserPreferencesMutation() {
+export function useDeletePlatformMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: updateUserPreferencesAction,
-    onSuccess: (res) => {
-      if (!res.success) return;
-      queryClient.invalidateQueries({ queryKey: ["get-user-preferences"] });
-    },
-  });
-}
-
-export function useRecordPlatformVisitMutation() {
-  return useMutation({
-    mutationFn: recordPlatformVisitAction,
-  });
-}
-
-export function useRecordCategoryVisitMutation() {
-  return useMutation({
-    mutationFn: recordCategoryVisitAction,
-  });
-}
-
-export function useUpdatePlatformMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: { name?: string; icon?: string | null } }) =>
-      updatePlatformAction(id, input),
+    mutationFn: (id: string) => deletePlatformAction(id),
     onSuccess: (res) => {
       if (!res.success) return;
       queryClient.invalidateQueries({ queryKey: ["get-platform"] });
@@ -46,12 +18,11 @@ export function useUpdatePlatformMutation() {
   });
 }
 
-export function useUpdateCategoryMutation() {
+export function useDeleteCategoryMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: { name?: string }; platformId?: string }) =>
-      updateCategoryAction(id, input),
+    mutationFn: ({ id }: { id: string; platformId?: string }) => deleteCategoryAction(id),
     onSuccess: (res, variables) => {
       if (!res.success) return;
       if (variables.platformId) {
@@ -67,18 +38,11 @@ export function useUpdateCategoryMutation() {
   });
 }
 
-export function useUpdateLinkMutation() {
+export function useDeleteLinkMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      id,
-      input,
-    }: {
-      id: string;
-      input: { url?: string; title?: string | null; description?: string | null };
-      platformId?: string;
-    }) => updateLinkAction(id, input),
+    mutationFn: ({ id }: { id: string; platformId?: string }) => deleteLinkAction(id),
     onSuccess: (res, variables) => {
       if (!res.success) return;
       if (variables.platformId) {
@@ -91,5 +55,3 @@ export function useUpdateLinkMutation() {
     },
   });
 }
-
-

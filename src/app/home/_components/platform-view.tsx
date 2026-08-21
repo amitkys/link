@@ -26,6 +26,9 @@ import { PlatformCardGrid } from "./platform-card-grid";
 import { PlatformCardList } from "./platform-card-list";
 import { PlatformControls } from "./platform-controls";
 import { PlatformSkeleton } from "./platform-skeleton";
+import { EditSheet, type EditTarget } from "./edit-sheet";
+import { DeleteDialog, type DeleteTarget } from "./delete-dialog";
+import type { Platform } from "@/app/home/query/get";
 
 export default function PlatformView() {
   const { data: platforms, isLoading, isError, error, refetch } = useGetPlatformQuery();
@@ -37,6 +40,8 @@ export default function PlatformView() {
   const { setViewMode, setSortBy, setPreferences } = usePreferencesActions();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
   // Hydrate Zustand store from remote DB preferences on mount/login
   useEffect(() => {
@@ -56,6 +61,23 @@ export default function PlatformView() {
   const handleSortByChange = (sort: SortOption) => {
     setSortBy(sort);
     updatePreferencesMutation.mutate({ viewMode, sortBy: sort });
+  };
+
+  const handleEditPlatform = (platform: Platform) => {
+    setEditTarget({
+      type: "platform",
+      id: platform.id,
+      name: platform.name,
+      icon: platform.icon,
+    });
+  };
+
+  const handleDeletePlatform = (platform: Platform) => {
+    setDeleteTarget({
+      type: "platform",
+      id: platform.id,
+      name: platform.name,
+    });
   };
 
   const filteredAndSortedPlatforms = useMemo(() => {
@@ -160,6 +182,8 @@ export default function PlatformView() {
                 <PlatformCardGrid
                   key={platform.id}
                   platform={platform}
+                  onEdit={handleEditPlatform}
+                  onDelete={handleDeletePlatform}
                 />
               ))}
             </div>
@@ -171,6 +195,8 @@ export default function PlatformView() {
                 <PlatformCardList
                   key={platform.id}
                   platform={platform}
+                  onEdit={handleEditPlatform}
+                  onDelete={handleDeletePlatform}
                 />
               ))}
             </div>
@@ -182,12 +208,27 @@ export default function PlatformView() {
                 <PlatformCardCompact
                   key={platform.id}
                   platform={platform}
+                  onEdit={handleEditPlatform}
+                  onDelete={handleDeletePlatform}
                 />
               ))}
             </div>
           )}
         </div>
       )}
+
+      {/* Edit & Delete Dialogs */}
+      <EditSheet
+        item={editTarget}
+        open={!!editTarget}
+        onOpenChange={(open) => !open && setEditTarget(null)}
+      />
+      <DeleteDialog
+        item={deleteTarget}
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      />
     </div>
   );
 }
+

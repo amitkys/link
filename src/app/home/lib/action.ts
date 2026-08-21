@@ -466,3 +466,199 @@ export async function createLinkAction(input: {
     return { success: false, message: "Failed to create link" };
   }
 }
+
+/**
+ * Updates an existing platform/hub for the authenticated user.
+ */
+export async function updatePlatformAction(
+  id: string,
+  input: { name?: string; icon?: string | null }
+) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return { success: false, message: "User not authenticated" };
+
+    const userId = session.user.id;
+    const updateData: Record<string, unknown> = { updatedAt: new Date() };
+
+    if (input.name !== undefined) {
+      const cleanName = input.name.trim();
+      if (!cleanName) return { success: false, message: "Platform name cannot be empty" };
+      updateData.name = cleanName;
+    }
+    if (input.icon !== undefined) {
+      updateData.icon = input.icon?.trim() || null;
+    }
+
+    const [updatedPlatform] = await db
+      .update(platformTable)
+      .set(updateData)
+      .where(and(eq(platformTable.id, id), eq(platformTable.userId, userId)))
+      .returning();
+
+    if (!updatedPlatform) {
+      return { success: false, message: "Platform not found" };
+    }
+
+    return { success: true, data: updatedPlatform };
+  } catch (error) {
+    console.error("updatePlatformAction error", error);
+    return { success: false, message: "Failed to update platform" };
+  }
+}
+
+/**
+ * Deletes a platform/hub for the authenticated user.
+ */
+export async function deletePlatformAction(id: string) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return { success: false, message: "User not authenticated" };
+
+    const userId = session.user.id;
+
+    const [deletedPlatform] = await db
+      .delete(platformTable)
+      .where(and(eq(platformTable.id, id), eq(platformTable.userId, userId)))
+      .returning();
+
+    if (!deletedPlatform) {
+      return { success: false, message: "Platform not found" };
+    }
+
+    return { success: true, data: deletedPlatform };
+  } catch (error) {
+    console.error("deletePlatformAction error", error);
+    return { success: false, message: "Failed to delete platform" };
+  }
+}
+
+/**
+ * Updates an existing directory or subdirectory for the authenticated user.
+ */
+export async function updateCategoryAction(
+  id: string,
+  input: { name?: string }
+) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return { success: false, message: "User not authenticated" };
+
+    const userId = session.user.id;
+    const cleanName = input.name?.trim();
+
+    if (!cleanName) {
+      return { success: false, message: "Category name cannot be empty" };
+    }
+
+    const [updatedCategory] = await db
+      .update(categoryTable)
+      .set({ name: cleanName, updatedAt: new Date() })
+      .where(and(eq(categoryTable.id, id), eq(categoryTable.userId, userId)))
+      .returning();
+
+    if (!updatedCategory) {
+      return { success: false, message: "Category not found" };
+    }
+
+    return { success: true, data: updatedCategory };
+  } catch (error) {
+    console.error("updateCategoryAction error", error);
+    return { success: false, message: "Failed to update category" };
+  }
+}
+
+/**
+ * Deletes a directory or subdirectory for the authenticated user.
+ */
+export async function deleteCategoryAction(id: string) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return { success: false, message: "User not authenticated" };
+
+    const userId = session.user.id;
+
+    const [deletedCategory] = await db
+      .delete(categoryTable)
+      .where(and(eq(categoryTable.id, id), eq(categoryTable.userId, userId)))
+      .returning();
+
+    if (!deletedCategory) {
+      return { success: false, message: "Category not found" };
+    }
+
+    return { success: true, data: deletedCategory };
+  } catch (error) {
+    console.error("deleteCategoryAction error", error);
+    return { success: false, message: "Failed to delete category" };
+  }
+}
+
+/**
+ * Updates an existing saved link for the authenticated user.
+ */
+export async function updateLinkAction(
+  id: string,
+  input: { url?: string; title?: string | null; description?: string | null }
+) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return { success: false, message: "User not authenticated" };
+
+    const userId = session.user.id;
+    const updateData: Record<string, unknown> = { updatedAt: new Date() };
+
+    if (input.url !== undefined) {
+      const cleanUrl = input.url.trim();
+      if (!cleanUrl) return { success: false, message: "URL cannot be empty" };
+      updateData.url = cleanUrl;
+    }
+    if (input.title !== undefined) {
+      updateData.title = input.title?.trim() || null;
+    }
+    if (input.description !== undefined) {
+      updateData.description = input.description?.trim() || null;
+    }
+
+    const [updatedLink] = await db
+      .update(linkTable)
+      .set(updateData)
+      .where(and(eq(linkTable.id, id), eq(linkTable.userId, userId)))
+      .returning();
+
+    if (!updatedLink) {
+      return { success: false, message: "Link not found" };
+    }
+
+    return { success: true, data: updatedLink };
+  } catch (error) {
+    console.error("updateLinkAction error", error);
+    return { success: false, message: "Failed to update link" };
+  }
+}
+
+/**
+ * Deletes a saved link for the authenticated user.
+ */
+export async function deleteLinkAction(id: string) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return { success: false, message: "User not authenticated" };
+
+    const userId = session.user.id;
+
+    const [deletedLink] = await db
+      .delete(linkTable)
+      .where(and(eq(linkTable.id, id), eq(linkTable.userId, userId)))
+      .returning();
+
+    if (!deletedLink) {
+      return { success: false, message: "Link not found" };
+    }
+
+    return { success: true, data: deletedLink };
+  } catch (error) {
+    console.error("deleteLinkAction error", error);
+    return { success: false, message: "Failed to delete link" };
+  }
+}

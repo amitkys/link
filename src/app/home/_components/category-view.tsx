@@ -8,6 +8,13 @@ import {
 } from "@/app/home/query/update";
 import { Button } from "@/components/ui/button";
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
   SortOption,
   usePreferencesActions,
   useSortBy,
@@ -22,25 +29,28 @@ import {
   IconFolder,
   IconFolderOpen,
   IconLink,
+  IconPencil,
   IconPlus,
   IconRefresh,
+  IconTrash,
 } from "@tabler/icons-react";
 import { navigateClient } from "@/app/home/lib/navigate";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { PlatformControls } from "./platform-controls";
+import { EditSheet, type EditTarget } from "./edit-sheet";
+import { DeleteDialog, type DeleteTarget } from "./delete-dialog";
 
 interface CategoryViewProps {
   platformId: string;
 }
 
 /**
- * Displays categories/subcategories and links with full sorting, view mode, and visit count features.
+ * Displays categories/subcategories and links with full sorting, view mode, visit count, and context menu edit/delete features.
  */
 export function CategoryView({ platformId }: CategoryViewProps) {
   const searchParams = useSearchParams();
-  const queryClient = useQueryClient();
 
   const viewMode = useViewMode();
   const sortBy = useSortBy();
@@ -49,6 +59,8 @@ export function CategoryView({ platformId }: CategoryViewProps) {
   const recordCategoryVisitMutation = useRecordCategoryVisitMutation();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
   const categoryId = searchParams.get("category");
 
@@ -102,6 +114,55 @@ export function CategoryView({ platformId }: CategoryViewProps) {
 
   const handleCategoryHover = (_category: Category) => {
     // All categories and links for this platform are already preloaded in platformData
+  };
+
+  const handleEditCategory = (category: Category) => {
+    setEditTarget({
+      type: "category",
+      id: category.id,
+      name: category.name,
+      isSubdirectory: !!categoryId,
+      platformId,
+    });
+  };
+
+  const handleDeleteCategory = (category: Category) => {
+    setDeleteTarget({
+      type: "category",
+      id: category.id,
+      name: category.name,
+      isSubdirectory: !!categoryId,
+      platformId,
+    });
+  };
+
+  const handleEditLink = (link: {
+    id: string;
+    url: string;
+    title: string | null;
+    description: string | null;
+  }) => {
+    setEditTarget({
+      type: "link",
+      id: link.id,
+      url: link.url,
+      title: link.title,
+      description: link.description,
+      platformId,
+    });
+  };
+
+  const handleDeleteLink = (link: {
+    id: string;
+    title: string | null;
+    url: string;
+  }) => {
+    setDeleteTarget({
+      type: "link",
+      id: link.id,
+      name: link.title || link.url,
+      platformId,
+    });
   };
 
   // Filter and sort categories
@@ -211,12 +272,7 @@ export function CategoryView({ platformId }: CategoryViewProps) {
             <Button onClick={() => setSearchQuery("")} variant="ghost" size="sm">
               Clear Search
             </Button>
-          ) : (
-            <Button size="sm" className="gap-2">
-              <IconPlus className="w-4 h-4" />
-              Add Category
-            </Button>
-          )}
+          ) : null}
         </div>
       ) : (
         <div className="space-y-8">
@@ -241,6 +297,8 @@ export function CategoryView({ platformId }: CategoryViewProps) {
                       category={category}
                       onClick={handleCategoryClick}
                       onHover={handleCategoryHover}
+                      onEdit={handleEditCategory}
+                      onDelete={handleDeleteCategory}
                     />
                   ))}
                 </div>
@@ -255,6 +313,8 @@ export function CategoryView({ platformId }: CategoryViewProps) {
                       category={category}
                       onClick={handleCategoryClick}
                       onHover={handleCategoryHover}
+                      onEdit={handleEditCategory}
+                      onDelete={handleDeleteCategory}
                     />
                   ))}
                 </div>
@@ -269,6 +329,8 @@ export function CategoryView({ platformId }: CategoryViewProps) {
                       category={category}
                       onClick={handleCategoryClick}
                       onHover={handleCategoryHover}
+                      onEdit={handleEditCategory}
+                      onDelete={handleDeleteCategory}
                     />
                   ))}
                 </div>
@@ -288,13 +350,30 @@ export function CategoryView({ platformId }: CategoryViewProps) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredLinks.map((link) => (
-                  <LinkCard key={link.id} link={link} />
+                  <LinkCard
+                    key={link.id}
+                    link={link}
+                    onEdit={handleEditLink}
+                    onDelete={handleDeleteLink}
+                  />
                 ))}
               </div>
             </div>
           )}
         </div>
       )}
+
+      {/* Edit & Delete Dialogs */}
+      <EditSheet
+        item={editTarget}
+        open={!!editTarget}
+        onOpenChange={(open) => !open && setEditTarget(null)}
+      />
+      <DeleteDialog
+        item={deleteTarget}
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      />
     </div>
   );
 }
@@ -305,10 +384,14 @@ function CategoryCardGrid({
   category,
   onClick,
   onHover,
+  onEdit,
+  onDelete,
 }: {
   category: Category;
   onClick: (c: Category) => void;
   onHover: (c: Category) => void;
+  onEdit?: (c: Category) => void;
+  onDelete?: (c: Category) => void;
 }) {
   const formattedDate = new Date(category.createdAt).toLocaleDateString("en-US", {
     month: "short",
@@ -317,39 +400,67 @@ function CategoryCardGrid({
   });
 
   return (
-    <div
-      onClick={() => onClick(category)}
-      onMouseEnter={() => onHover(category)}
-      className="group relative flex flex-col justify-between bg-card hover:bg-accent/40 border border-border hover:border-primary/40 rounded-xl p-5 transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer"
-    >
-      <div className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
-            <IconFolder className="w-5 h-5" />
+    <ContextMenu>
+      <ContextMenuTrigger
+        render={
+          <div
+            onClick={() => onClick(category)}
+            onMouseEnter={() => onHover(category)}
+            className="group relative flex flex-col justify-between bg-card hover:bg-accent/40 border border-border hover:border-primary/40 rounded-xl p-5 transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer"
+          >
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+                  <IconFolder className="w-5 h-5" />
+                </div>
+                <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-mono">
+                  <IconCalendar className="w-3 h-3" />
+                  {formattedDate}
+                </span>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                  {category.name}
+                </h3>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground">
+              <span className="group-hover:text-foreground transition-colors font-medium">
+                Explore category &rarr;
+              </span>
+              <span className="flex items-center gap-1 text-[11px] font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md">
+                <IconEye className="w-3 h-3 text-primary" />
+                {category.visitedTimes || 0} visits
+              </span>
+            </div>
           </div>
-          <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-mono">
-            <IconCalendar className="w-3 h-3" />
-            {formattedDate}
-          </span>
-        </div>
-
-        <div>
-          <h3 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors line-clamp-1">
-            {category.name}
-          </h3>
-        </div>
-      </div>
-
-      <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground">
-        <span className="group-hover:text-foreground transition-colors font-medium">
-          Explore category &rarr;
-        </span>
-        <span className="flex items-center gap-1 text-[11px] font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md">
-          <IconEye className="w-3 h-3 text-primary" />
-          {category.visitedTimes || 0} visits
-        </span>
-      </div>
-    </div>
+        }
+      />
+      <ContextMenuContent className="w-48">
+        <ContextMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit?.(category);
+          }}
+        >
+          <IconPencil className="mr-2 size-4" />
+          Edit Category
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          variant="destructive"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete?.(category);
+          }}
+        >
+          <IconTrash className="mr-2 size-4" />
+          Delete Category
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 
@@ -357,10 +468,14 @@ function CategoryCardList({
   category,
   onClick,
   onHover,
+  onEdit,
+  onDelete,
 }: {
   category: Category;
   onClick: (c: Category) => void;
   onHover: (c: Category) => void;
+  onEdit?: (c: Category) => void;
+  onDelete?: (c: Category) => void;
 }) {
   const formattedDate = new Date(category.createdAt).toLocaleDateString("en-US", {
     month: "short",
@@ -369,34 +484,62 @@ function CategoryCardList({
   });
 
   return (
-    <div
-      onClick={() => onClick(category)}
-      onMouseEnter={() => onHover(category)}
-      className="flex items-center justify-between p-4 hover:bg-accent/30 transition-colors group cursor-pointer"
-    >
-      <div className="flex items-center gap-4 min-w-0">
-        <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-          <IconFolder className="w-4 h-4" />
-        </div>
-        <div className="min-w-0">
-          <h3 className="font-medium text-sm text-foreground group-hover:text-primary transition-colors truncate">
-            {category.name}
-          </h3>
-        </div>
-      </div>
+    <ContextMenu>
+      <ContextMenuTrigger
+        render={
+          <div
+            onClick={() => onClick(category)}
+            onMouseEnter={() => onHover(category)}
+            className="flex items-center justify-between p-4 hover:bg-accent/30 transition-colors group cursor-pointer"
+          >
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                <IconFolder className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-medium text-sm text-foreground group-hover:text-primary transition-colors truncate">
+                  {category.name}
+                </h3>
+              </div>
+            </div>
 
-      <div className="flex items-center gap-6 shrink-0 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1 font-mono bg-muted/50 px-2 py-0.5 rounded-md">
-          <IconEye className="w-3 h-3 text-primary" />
-          {category.visitedTimes || 0} visits
-        </span>
-        <span className="hidden sm:flex items-center gap-1 font-mono">
-          <IconCalendar className="w-3.5 h-3.5" />
-          {formattedDate}
-        </span>
-        <span className="text-primary font-medium group-hover:underline">Open &rarr;</span>
-      </div>
-    </div>
+            <div className="flex items-center gap-6 shrink-0 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1 font-mono bg-muted/50 px-2 py-0.5 rounded-md">
+                <IconEye className="w-3 h-3 text-primary" />
+                {category.visitedTimes || 0} visits
+              </span>
+              <span className="hidden sm:flex items-center gap-1 font-mono">
+                <IconCalendar className="w-3.5 h-3.5" />
+                {formattedDate}
+              </span>
+              <span className="text-primary font-medium group-hover:underline">Open &rarr;</span>
+            </div>
+          </div>
+        }
+      />
+      <ContextMenuContent className="w-48">
+        <ContextMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit?.(category);
+          }}
+        >
+          <IconPencil className="mr-2 size-4" />
+          Edit Category
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          variant="destructive"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete?.(category);
+          }}
+        >
+          <IconTrash className="mr-2 size-4" />
+          Delete Category
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 
@@ -404,30 +547,62 @@ function CategoryCardCompact({
   category,
   onClick,
   onHover,
+  onEdit,
+  onDelete,
 }: {
   category: Category;
   onClick: (c: Category) => void;
   onHover: (c: Category) => void;
+  onEdit?: (c: Category) => void;
+  onDelete?: (c: Category) => void;
 }) {
   return (
-    <div
-      onClick={() => onClick(category)}
-      onMouseEnter={() => onHover(category)}
-      className="flex items-center justify-between p-3 rounded-lg border border-border bg-card hover:bg-accent/40 hover:border-primary/40 transition-all group cursor-pointer"
-    >
-      <div className="flex items-center gap-2.5 min-w-0">
-        <div className="w-7 h-7 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-          <IconFolder className="w-3.5 h-3.5" />
-        </div>
-        <span className="font-medium text-xs text-foreground group-hover:text-primary transition-colors truncate">
-          {category.name}
-        </span>
-      </div>
-      <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-xs shrink-0 flex items-center gap-0.5">
-        <IconEye className="w-2.5 h-2.5 text-primary" />
-        {category.visitedTimes || 0}
-      </span>
-    </div>
+    <ContextMenu>
+      <ContextMenuTrigger
+        render={
+          <div
+            onClick={() => onClick(category)}
+            onMouseEnter={() => onHover(category)}
+            className="flex items-center justify-between p-3 rounded-lg border border-border bg-card hover:bg-accent/40 hover:border-primary/40 transition-all group cursor-pointer"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-7 h-7 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                <IconFolder className="w-3.5 h-3.5" />
+              </div>
+              <span className="font-medium text-xs text-foreground group-hover:text-primary transition-colors truncate">
+                {category.name}
+              </span>
+            </div>
+            <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-xs shrink-0 flex items-center gap-0.5">
+              <IconEye className="w-2.5 h-2.5 text-primary" />
+              {category.visitedTimes || 0}
+            </span>
+          </div>
+        }
+      />
+      <ContextMenuContent className="w-48">
+        <ContextMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit?.(category);
+          }}
+        >
+          <IconPencil className="mr-2 size-4" />
+          Edit Category
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          variant="destructive"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete?.(category);
+          }}
+        >
+          <IconTrash className="mr-2 size-4" />
+          Delete Category
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 
@@ -435,6 +610,8 @@ function CategoryCardCompact({
 
 function LinkCard({
   link,
+  onEdit,
+  onDelete,
 }: {
   link: {
     id: string;
@@ -445,6 +622,8 @@ function LinkCard({
     isFavorite: boolean;
     visitedTimes: number;
   };
+  onEdit?: (link: { id: string; url: string; title: string | null; description: string | null }) => void;
+  onDelete?: (link: { id: string; title: string | null; url: string }) => void;
 }) {
   let displayTitle = link.title;
   if (!displayTitle) {
@@ -460,47 +639,75 @@ function LinkCard({
   };
 
   return (
-    <div
-      onClick={handleClick}
-      className="group relative flex flex-col justify-between bg-card hover:bg-accent/40 border border-border hover:border-primary/40 rounded-xl p-5 transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer min-w-0"
-    >
-      <div className="space-y-3 min-w-0">
-        {link.thumbnail && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={link.thumbnail}
-            alt={displayTitle}
-            className="w-full h-32 object-cover rounded-lg"
-          />
-        )}
-
-        <div className="flex items-center gap-2 min-w-0">
-          <IconLink className="w-4 h-4 text-primary shrink-0" />
-          <h3
-            className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors truncate min-w-0"
-            title={displayTitle}
+    <ContextMenu>
+      <ContextMenuTrigger
+        render={
+          <div
+            onClick={handleClick}
+            className="group relative flex flex-col justify-between bg-card hover:bg-accent/40 border border-border hover:border-primary/40 rounded-xl p-5 transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer min-w-0"
           >
-            {displayTitle}
-          </h3>
-        </div>
+            <div className="space-y-3 min-w-0">
+              {link.thumbnail && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={link.thumbnail}
+                  alt={displayTitle}
+                  className="w-full h-32 object-cover rounded-lg"
+                />
+              )}
 
-        {link.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2 break-words">
-            {link.description}
-          </p>
-        )}
-      </div>
+              <div className="flex items-center gap-2 min-w-0">
+                <IconLink className="w-4 h-4 text-primary shrink-0" />
+                <h3
+                  className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors truncate min-w-0"
+                  title={displayTitle}
+                >
+                  {displayTitle}
+                </h3>
+              </div>
 
-      <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground gap-2 min-w-0">
-        <span
-          className="truncate font-mono text-[11px] text-muted-foreground/80 shrink min-w-0"
-          title={link.url}
+              {link.description && (
+                <p className="text-xs text-muted-foreground line-clamp-2 break-words">
+                  {link.description}
+                </p>
+              )}
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground gap-2 min-w-0">
+              <span
+                className="truncate font-mono text-[11px] text-muted-foreground/80 shrink min-w-0"
+                title={link.url}
+              >
+                {link.url}
+              </span>
+              <IconExternalLink className="w-3.5 h-3.5 text-primary shrink-0" />
+            </div>
+          </div>
+        }
+      />
+      <ContextMenuContent className="w-44">
+        <ContextMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit?.(link);
+          }}
         >
-          {link.url}
-        </span>
-        <IconExternalLink className="w-3.5 h-3.5 text-primary shrink-0" />
-      </div>
-    </div>
+          <IconPencil className="mr-2 size-4" />
+          Edit Link
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          variant="destructive"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete?.({ id: link.id, title: link.title, url: link.url });
+          }}
+        >
+          <IconTrash className="mr-2 size-4" />
+          Delete Link
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 
