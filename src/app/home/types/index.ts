@@ -54,7 +54,6 @@ export const CreatePlatformSchema = z.object({
   icon: z
     .string()
     .trim()
-    .url("Icon must be a valid URL")
     .optional()
     .or(z.literal("")),
 });

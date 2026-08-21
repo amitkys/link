@@ -28,6 +28,8 @@ import {
   IconPlus,
   IconSitemap,
 } from "@tabler/icons-react";
+import { detectIconType } from "@/app/home/lib/icon-utils";
+import { PlatformIcon } from "@/app/home/_components/platform-icon";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -59,63 +61,85 @@ export function CreateSheet() {
     createPlatformMutation.isPending || createCategoryMutation.isPending;
   const isLinkPending = createLinkMutation.isPending;
 
-  // Shortcut key handler: Ctrl + Shift + N for Directory / Platform (Overriding Chrome default via capture phase)
+  // Enable Keyboard Lock API for Chromium (Chrome/Edge/Brave) when installed/fullscreen
+  useEffect(() => {
+    if (typeof window !== "undefined" && "keyboard" in navigator) {
+      try {
+        (navigator as Record<string, any>).keyboard
+          ?.lock?.(["KeyN", "KeyL"])
+          .catch(() => {});
+      } catch {}
+    }
+  }, []);
+
+  // Shortcut key handler: 'N' key (Single 'N', Alt+N, Alt+Shift+N, or Ctrl+Shift+N) for Directory / Platform
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
       if (
-        (e.ctrlKey || e.metaKey) &&
-        e.shiftKey &&
-        (e.key === "N" || e.key === "n" || e.code === "KeyN")
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable ||
+          target.closest("[role='dialog']") ||
+          target.closest("[data-slot='sheet-content']"))
       ) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-
-        const target = e.target as HTMLElement | null;
-        if (
-          target &&
-          (target.tagName === "INPUT" ||
-            target.tagName === "TEXTAREA" ||
-            target.isContentEditable)
-        ) {
-          return;
-        }
-
-        setOpenFolder((prev) => !prev);
+        return;
       }
+
+      const isN = e.key === "N" || e.key === "n" || e.code === "KeyN";
+      if (!isN) return;
+
+      // Ignore bare Ctrl+N / Cmd+N (which opens browser new window)
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+        return;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === "function") {
+        e.stopImmediatePropagation();
+      }
+
+      setOpenFolder((prev) => !prev);
     };
 
-    // { capture: true } allows catching the event BEFORE the browser native handling
     window.addEventListener("keydown", handleKeyDown, { capture: true });
     return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
   }, []);
 
-  // Shortcut key handler: Ctrl + Shift + L for Link (only when inside a platform)
+  // Shortcut key handler: 'L' key (Single 'L', Alt+L, Alt+Shift+L, or Ctrl+Shift+L) for Link (only inside a platform)
   useEffect(() => {
     if (!platformId) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
       if (
-        (e.ctrlKey || e.metaKey) &&
-        e.shiftKey &&
-        (e.key === "L" || e.key === "l" || e.code === "KeyL")
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable ||
+          target.closest("[role='dialog']") ||
+          target.closest("[data-slot='sheet-content']"))
       ) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-
-        const target = e.target as HTMLElement | null;
-        if (
-          target &&
-          (target.tagName === "INPUT" ||
-            target.tagName === "TEXTAREA" ||
-            target.isContentEditable)
-        ) {
-          return;
-        }
-
-        setOpenLink((prev) => !prev);
+        return;
       }
+
+      const isL = e.key === "L" || e.key === "l" || e.code === "KeyL";
+      if (!isL) return;
+
+      // Ignore bare Ctrl+L / Cmd+L (which focuses browser address bar)
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+        return;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === "function") {
+        e.stopImmediatePropagation();
+      }
+
+      setOpenLink((prev) => !prev);
     };
 
     window.addEventListener("keydown", handleKeyDown, { capture: true });
@@ -258,7 +282,7 @@ export function CreateSheet() {
             <TooltipContent side="left" className="flex items-center gap-2">
               <span>Create Link</span>
               <kbd className="text-[10px] font-mono border border-background/30 bg-background/20 px-1.5 py-0.5 rounded">
-                Ctrl+Shift+L
+                L
               </kbd>
             </TooltipContent>
           </Tooltip>
@@ -361,7 +385,7 @@ export function CreateSheet() {
           <TooltipContent side="left" className="flex items-center gap-2">
             <span>{folderHeader.title}</span>
             <kbd className="text-[10px] font-mono border border-background/30 bg-background/20 px-1.5 py-0.5 rounded">
-              Ctrl+Shift+N
+              N
             </kbd>
           </TooltipContent>
         </Tooltip>
@@ -397,18 +421,34 @@ export function CreateSheet() {
             </div>
 
             {isCreatingPlatform && (
-              <div className="space-y-1.5">
-                <Label htmlFor="icon-url" className="text-xs font-semibold">
-                  Icon Image URL <span className="text-muted-foreground font-normal">(Optional)</span>
-                </Label>
-                <Input
-                  id="icon-url"
-                  placeholder="https://example.com/icon.png"
-                  value={iconUrl}
-                  onChange={(e) => setIconUrl(e.target.value)}
-                  disabled={isFolderPending}
-                  className="bg-card"
-                />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="icon-url" className="text-xs font-semibold">
+                    Icon <span className="text-muted-foreground font-normal">(URL or SVG Code - Optional)</span>
+                  </Label>
+                  {detectIconType(iconUrl) !== "none" && (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
+                      {detectIconType(iconUrl) === "svg" ? "SVG Code" : "Image Link"}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex-1">
+                    <textarea
+                      id="icon-url"
+                      placeholder="Paste image URL (https://...) or raw SVG code (<svg>...)"
+                      value={iconUrl}
+                      onChange={(e) => setIconUrl(e.target.value)}
+                      disabled={isFolderPending}
+                      rows={2}
+                      className="w-full rounded-md border border-input bg-card px-3 py-2 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-mono resize-none"
+                    />
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-card border border-border flex flex-col items-center justify-center shrink-0 shadow-xs p-1">
+                    <PlatformIcon icon={iconUrl} name={name || "Preview"} iconClassName="size-6 text-primary" />
+                    <span className="text-[9px] text-muted-foreground mt-0.5">Preview</span>
+                  </div>
+                </div>
               </div>
             )}
 

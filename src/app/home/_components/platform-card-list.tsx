@@ -11,9 +11,9 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { IconCalendar, IconEye, IconFolder, IconPencil, IconTrash } from "@tabler/icons-react";
+import { PlatformIcon } from "@/app/home/_components/platform-icon";
+import { IconCalendar, IconEye, IconPencil, IconTrash } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
 
 interface PlatformCardListProps {
   platform: Platform;
@@ -24,7 +24,6 @@ interface PlatformCardListProps {
 export function PlatformCardList({ platform, onEdit, onDelete }: PlatformCardListProps) {
   const queryClient = useQueryClient();
   const recordVisitMutation = useRecordPlatformVisitMutation();
-  const [imgError, setImgError] = useState(false);
 
   const formattedDate = new Date(platform.createdAt).toLocaleDateString("en-US", {
     month: "short",
@@ -52,17 +51,7 @@ export function PlatformCardList({ platform, onEdit, onDelete }: PlatformCardLis
           >
             <div className="flex items-center gap-4 min-w-0">
               <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 overflow-hidden">
-                {platform.icon && !imgError ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={platform.icon}
-                    alt={platform.name}
-                    onError={() => setImgError(true)}
-                    className="w-4 h-4 object-contain"
-                  />
-                ) : (
-                  <IconFolder className="w-4 h-4" />
-                )}
+                <PlatformIcon icon={platform.icon} name={platform.name} iconClassName="w-4 h-4" />
               </div>
               <div className="min-w-0">
                 <h3 className="font-medium text-sm text-foreground group-hover:text-primary transition-colors truncate">

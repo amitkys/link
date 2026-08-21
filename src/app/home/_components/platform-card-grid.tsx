@@ -11,9 +11,9 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { IconCalendar, IconEye, IconFolder, IconPencil, IconTrash } from "@tabler/icons-react";
+import { PlatformIcon } from "@/app/home/_components/platform-icon";
+import { IconCalendar, IconEye, IconPencil, IconTrash } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
 
 interface PlatformCardGridProps {
   platform: Platform;
@@ -24,7 +24,6 @@ interface PlatformCardGridProps {
 export function PlatformCardGrid({ platform, onEdit, onDelete }: PlatformCardGridProps) {
   const queryClient = useQueryClient();
   const recordVisitMutation = useRecordPlatformVisitMutation();
-  const [imgError, setImgError] = useState(false);
 
   const formattedDate = new Date(platform.createdAt).toLocaleDateString("en-US", {
     month: "short",
@@ -53,17 +52,7 @@ export function PlatformCardGrid({ platform, onEdit, onDelete }: PlatformCardGri
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-105 transition-transform shrink-0 overflow-hidden">
-                  {platform.icon && !imgError ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={platform.icon}
-                      alt={platform.name}
-                      onError={() => setImgError(true)}
-                      className="w-5 h-5 object-contain"
-                    />
-                  ) : (
-                    <IconFolder className="w-5 h-5" />
-                  )}
+                  <PlatformIcon icon={platform.icon} name={platform.name} iconClassName="w-5 h-5" />
                 </div>
                 <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-mono">
                   <IconCalendar className="w-3 h-3" />

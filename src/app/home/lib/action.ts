@@ -9,6 +9,7 @@ import {
 } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { redis } from "@/lib/redis";
+import { processIconInput } from "@/app/home/lib/icon-utils";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 
@@ -372,7 +373,7 @@ export async function createPlatformAction(input: {
       .values({
         userId,
         name: cleanName,
-        icon: input.icon?.trim() || null,
+        icon: processIconInput(input.icon),
       })
       .returning();
 
@@ -487,7 +488,7 @@ export async function updatePlatformAction(
       updateData.name = cleanName;
     }
     if (input.icon !== undefined) {
-      updateData.icon = input.icon?.trim() || null;
+      updateData.icon = processIconInput(input.icon);
     }
 
     const [updatedPlatform] = await db

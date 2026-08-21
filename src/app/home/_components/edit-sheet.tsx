@@ -22,6 +22,8 @@ import {
   IconPencil,
   IconSitemap,
 } from "@tabler/icons-react";
+import { detectIconType } from "@/app/home/lib/icon-utils";
+import { PlatformIcon } from "@/app/home/_components/platform-icon";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -233,21 +235,34 @@ export function EditSheet({ item, open, onOpenChange }: EditSheetProps) {
               </div>
 
               {item.type === "platform" && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-icon" className="text-xs font-semibold">
-                    Icon Image URL{" "}
-                    <span className="text-muted-foreground font-normal">
-                      (Optional)
-                    </span>
-                  </Label>
-                  <Input
-                    id="edit-icon"
-                    placeholder="https://example.com/icon.png"
-                    value={iconUrl}
-                    onChange={(e) => setIconUrl(e.target.value)}
-                    disabled={isPending}
-                    className="bg-card"
-                  />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="edit-icon" className="text-xs font-semibold">
+                      Icon <span className="text-muted-foreground font-normal">(URL or SVG Code - Optional)</span>
+                    </Label>
+                    {detectIconType(iconUrl) !== "none" && (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
+                        {detectIconType(iconUrl) === "svg" ? "SVG Code" : "Image Link"}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1">
+                      <textarea
+                        id="edit-icon"
+                        placeholder="Paste image URL (https://...) or raw SVG code (<svg>...)"
+                        value={iconUrl}
+                        onChange={(e) => setIconUrl(e.target.value)}
+                        disabled={isPending}
+                        rows={2}
+                        className="w-full rounded-md border border-input bg-card px-3 py-2 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-mono resize-none"
+                      />
+                    </div>
+                    <div className="w-12 h-12 rounded-xl bg-card border border-border flex flex-col items-center justify-center shrink-0 shadow-xs p-1">
+                      <PlatformIcon icon={iconUrl} name={name || "Preview"} iconClassName="size-6 text-primary" />
+                      <span className="text-[9px] text-muted-foreground mt-0.5">Preview</span>
+                    </div>
+                  </div>
                 </div>
               )}
             </>

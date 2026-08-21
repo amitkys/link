@@ -11,9 +11,9 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { IconFolder, IconPencil, IconTrash } from "@tabler/icons-react";
+import { PlatformIcon } from "@/app/home/_components/platform-icon";
+import { IconPencil, IconTrash } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
 
 interface PlatformCardCompactProps {
   platform: Platform;
@@ -24,7 +24,6 @@ interface PlatformCardCompactProps {
 export function PlatformCardCompact({ platform, onEdit, onDelete }: PlatformCardCompactProps) {
   const queryClient = useQueryClient();
   const recordVisitMutation = useRecordPlatformVisitMutation();
-  const [imgError, setImgError] = useState(false);
 
   const handleClick = () => {
     recordVisitMutation.mutate(platform.id);
@@ -46,17 +45,7 @@ export function PlatformCardCompact({ platform, onEdit, onDelete }: PlatformCard
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-7 h-7 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 overflow-hidden">
-                {platform.icon && !imgError ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={platform.icon}
-                    alt={platform.name}
-                    onError={() => setImgError(true)}
-                    className="w-3.5 h-3.5 object-contain"
-                  />
-                ) : (
-                  <IconFolder className="w-3.5 h-3.5" />
-                )}
+                <PlatformIcon icon={platform.icon} name={platform.name} iconClassName="w-3.5 h-3.5" />
               </div>
               <span className="font-medium text-xs text-foreground group-hover:text-primary transition-colors truncate">
                 {platform.name}
